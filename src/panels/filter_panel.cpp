@@ -25,35 +25,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_VIEW_LOG_STORE_H_
-#define LOG_VIEW_LOG_STORE_H_
-
-#include <deque>
-#include <mutex>
-
-#include <log_view/datatypes.h>
-#include <rosgraph_msgs/Log.h>
+#include <log_view/panels/filter_panel.h>
 
 namespace log_view {
 
-class LogStore {
-public:
-  LogStore() = default;
+void FilterPanel::refresh() {
+  mvwprintw(window_, 0, 0, "filter: %s", input_text_.c_str());
+}
 
-  const std::deque<LogEntry>& logs();
-  size_t size() const;
+void FilterPanel::activate(bool enable) {
+  if (enable) {
+    filter_.setFilter(input_text_);
+  }
+  else {
+    filter_.setFilter("");
+  }
+}
 
-  void addEntry(const rosgraph_msgs::LogConstPtr& msg);
-
-private:
-  std::deque<LogEntry> logs_;
-  std::deque<LogEntry> new_logs_;
-
-  std::mutex mutex_;
-
-};
-typedef std::shared_ptr<LogStore> LogStorePtr;
-
-}  // namespace log_view
-
-#endif  // LOG_VIEW_LOG_STORE_H_
+} // namespace log_view

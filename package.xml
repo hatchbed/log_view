@@ -2,7 +2,13 @@
 <package format="2">
   <name>log_view</name>
   <version>0.0.0</version>
-  <description>The log_view package</description>
+  <description>
+    The log_view package provides a ncurses based terminal GUI for
+    viewing and filtering published ROS log messages.
+
+    This is an alternative to rqt_console and swri_console that doesn't depend
+    on qt and can be run directly in a terminal.
+  </description>
 
   <author email="marcalban@hatchbed.com">Marc Alban</author>
   <maintainer email="marcalban@hatchbed.com">Marc Alban</maintainer>
@@ -13,5 +19,7 @@
 
   <depend>roscpp</depend>
   <depend>libncurses-dev</depend>
+
+  <exec_depend>xclip</exec_depend>
 
 </package>

@@ -25,35 +25,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_VIEW_LOG_STORE_H_
-#define LOG_VIEW_LOG_STORE_H_
+#ifndef LOG_VIEW_UTILS_H_
+#define LOG_VIEW_UTILS_H_
 
-#include <deque>
-#include <mutex>
-
-#include <log_view/datatypes.h>
-#include <rosgraph_msgs/Log.h>
+#include <algorithm>
+#include <cctype>
+#include <string>
+#include <vector>
 
 namespace log_view {
 
-class LogStore {
-public:
-  LogStore() = default;
+enum Color { CP_DEFAULT, CP_RED, CP_YELLOW, CP_GREY, CP_DEFAULT_CYAN, CP_DEFAULT_GREY };
 
-  const std::deque<LogEntry>& logs();
-  size_t size() const;
+std::string toString(double val, int precision);
 
-  void addEntry(const rosgraph_msgs::LogConstPtr& msg);
+int ctrl(char key);
 
-private:
-  std::deque<LogEntry> logs_;
-  std::deque<LogEntry> new_logs_;
+std::vector<std::string> split(const std::string &text, char sep);
 
-  std::mutex mutex_;
+bool contains(const std::string& text, const std::string& substr, bool case_insensitive);
 
-};
-typedef std::shared_ptr<LogStore> LogStorePtr;
+std::vector<size_t> find(const std::string& text, const std::string& substr, bool case_insensitive);
+
+void toClipboard(const std::string& text);
 
 }  // namespace log_view
 
-#endif  // LOG_VIEW_LOG_STORE_H_
+#endif  // LOG_VIEW_UTILS_H_

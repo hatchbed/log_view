@@ -25,35 +25,30 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_VIEW_LOG_STORE_H_
-#define LOG_VIEW_LOG_STORE_H_
+#ifndef LOG_VIEW_FILTER_PANEL_H_
+#define LOG_VIEW_FILTER_PANEL_H_
 
-#include <deque>
-#include <mutex>
-
-#include <log_view/datatypes.h>
-#include <rosgraph_msgs/Log.h>
+#include <log_view/panel_interface.h>
+#include <log_view/log_filter.h>
 
 namespace log_view {
 
-class LogStore {
-public:
-  LogStore() = default;
+class FilterPanel : public PanelInterface {
+  public:
+  FilterPanel(int height, int width, int y, int x, LogFilter& filter) : PanelInterface(height, width, y, x), filter_(filter) {}
+  virtual ~FilterPanel() {}
+  virtual void refresh();
 
-  const std::deque<LogEntry>& logs();
-  size_t size() const;
+  protected:
+  virtual bool canFocus() const { return true; }
+  virtual bool canInput() const { return true; }
+  virtual void activate(bool enable);
+  virtual int inputOffset() const { return 8; }
 
-  void addEntry(const rosgraph_msgs::LogConstPtr& msg);
-
-private:
-  std::deque<LogEntry> logs_;
-  std::deque<LogEntry> new_logs_;
-
-  std::mutex mutex_;
-
+  LogFilter& filter_;
 };
-typedef std::shared_ptr<LogStore> LogStorePtr;
+typedef std::shared_ptr<FilterPanel> FilterPanelPtr;
 
 }  // namespace log_view
 
-#endif  // LOG_VIEW_LOG_STORE_H_
+#endif  // LOG_VIEW_FILTER_PANEL_H_

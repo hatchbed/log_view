@@ -25,35 +25,25 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_VIEW_LOG_STORE_H_
-#define LOG_VIEW_LOG_STORE_H_
-
-#include <deque>
-#include <mutex>
-
-#include <log_view/datatypes.h>
-#include <rosgraph_msgs/Log.h>
+#include <log_view/panels/status_panel.h>
 
 namespace log_view {
 
-class LogStore {
-public:
-  LogStore() = default;
+void StatusPanel::refresh() {
+  wattron(window_, A_REVERSE);
+  std::string clear(width_, ' ');
+  mvwprintw(window_, 0, 0, clear.c_str());
+  mvwprintw(window_, 0, 0, "status: %s  logs: %zu", connected_ ? "connected" : "not connected", logs_->size());
 
-  const std::deque<LogEntry>& logs();
-  size_t size() const;
+  std::string system_time = toString(system_time_.toSec(), 2);
+  std::string ros_time = "--";
+  if (ros_time_ != ros::Time(0)) {
+    ros_time =  toString(ros_time_.toSec(), 2);
+  }
 
-  void addEntry(const rosgraph_msgs::LogConstPtr& msg);
+  std::string time_str = "ros time: " + ros_time + "  system time: " + system_time;
+  mvwprintw(window_, 0, width_ - time_str.size(), time_str.c_str());
+  wattroff(window_, A_REVERSE);
+}
 
-private:
-  std::deque<LogEntry> logs_;
-  std::deque<LogEntry> new_logs_;
-
-  std::mutex mutex_;
-
-};
-typedef std::shared_ptr<LogStore> LogStorePtr;
-
-}  // namespace log_view
-
-#endif  // LOG_VIEW_LOG_STORE_H_
+} // namespace log_view

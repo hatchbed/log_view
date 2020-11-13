@@ -25,71 +25,79 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_VIEW_LOG_VIEW_H_
-#define LOG_VIEW_LOG_VIEW_H_
-
-#include <log_view/log_filter.h>
-#include <log_view/log_store.h>
-#include <log_view/panel_interface.h>
-#include <log_view/panels/exclude_panel.h>
-#include <log_view/panels/filter_panel.h>
-#include <log_view/panels/help_panel.h>
-#include <log_view/panels/level_panel.h>
-#include <log_view/panels/log_panel.h>
-#include <log_view/panels/node_panel.h>
 #include <log_view/panels/search_panel.h>
-#include <log_view/panels/status_panel.h>
-#include <curses.h>
-#include <panel.h>
-#include <ros/ros.h>
 
 namespace log_view {
 
-class LogView {
-public:
-  explicit LogView(LogStorePtr& logs);
-  ~LogView();
+void SearchPanel::refresh() {
+  if (show_results_) {
+    wattron(window_, COLOR_PAIR(CP_DEFAULT_GREY));
+    std::string background(width_, ' ');
+    mvwprintw(window_, 0, 0, background.c_str());
+    std::string text = "match: " + filter_.getSearch();
+    mvwprintw(window_, 0, 0, text.c_str());
 
-  void init();
-  void close();
+    std::string help = "  Press Enter/Backspace to move forward/backward through search results";
+    if (help.length() + text.length() <= width_) {
+        mvwprintw(window_, 0, width_ - help.length(), help.c_str());
+    }
 
-  bool exited() const;
+    wattroff(window_, COLOR_PAIR(CP_DEFAULT_GREY));
+  }
+  else {
+    mvwprintw(window_, 0, 0, "search: %s", input_text_.c_str());
+  }
+}
 
-  void setConnected(bool connected);
-  void setRosTime(const ros::Time& time);
-  void setSystemTime(const ros::WallTime& time);
+bool SearchPanel::handleInput(int val) {
+  if (!canInput() || !focus_) {
+    return false;
+  }
 
-  void update();
+  if (val == KEY_ENTER_VAL) {
+    if (input_text_.empty()) {
+      hide(true);
+      setFocus(false);
+      return true;
+    }
 
-private:
-  void refreshLayout();
+    filter_.search(input_text_);
+    show_results_ = true;
+    input_text_.clear();
+    input_loc_ = -1;
+    setFocus(false);
+    refresh();
+    return true;
+  }
 
-  size_t viewSize() const;
+  return PanelInterface::handleInput(val);
+}
 
-  void tab();
-  void focusNext(const PanelInterfacePtr& panel);
-  void unfocusOthers(const PanelInterfacePtr& focused);
+void SearchPanel::clearSearch() {
+  if (show_results_) {
+    show_results_ = false;
+    filter_.clearSearch();
+    input_text_.clear();
+    setFocus(false);
+    hide(true);
+  }
+}
 
-  LogStorePtr logs_;
-  LogFilter log_filter_;
+void SearchPanel::toggle() {
+  if (!hidden_ && show_results_) {
+    input_text_.clear();
+    input_loc_ = -1;
+    show_results_ = false;
+    setFocus(true);
+  }
+  else if (!hidden_) {
+    hide(true);
+  }
+  else {
+    show_results_ = false;
+    setFocus(true);
+    hide(false);
+  }
+}
 
-  bool exited_ = false;
-  bool mouse_down_ = false;
-
-  bool node_select_ = true;
-  bool log_scroll_ = false;
-
-  std::vector<PanelInterfacePtr> panels_;
-  StatusPanelPtr status_panel_;
-  LevelPanelPtr level_panel_;
-  SearchPanelPtr search_panel_;
-  FilterPanelPtr filter_panel_;
-  ExcludePanelPtr exclude_panel_;
-  LogPanelPtr log_panel_;
-  NodePanelPtr node_panel_;
-  HelpPanelPtr help_panel_;
-};
-
-}  // namespace log_view
-
-#endif  // LOG_VIEW_LOG_VIEW_H_
+} // namespace log_view

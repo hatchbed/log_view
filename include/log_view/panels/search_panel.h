@@ -25,35 +25,35 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_VIEW_LOG_STORE_H_
-#define LOG_VIEW_LOG_STORE_H_
+#ifndef LOG_VIEW_SEARCH_PANEL_H_
+#define LOG_VIEW_SEARCH_PANEL_H_
 
-#include <deque>
-#include <mutex>
-
-#include <log_view/datatypes.h>
-#include <rosgraph_msgs/Log.h>
+#include <log_view/panel_interface.h>
+#include <log_view/log_filter.h>
 
 namespace log_view {
 
-class LogStore {
-public:
-  LogStore() = default;
+class SearchPanel : public PanelInterface {
+  public:
+  SearchPanel(int height, int width, int y, int x, LogFilter& filter) : PanelInterface(height, width, y, x), filter_(filter) {}
+  virtual ~SearchPanel() {}
+  virtual void refresh();
 
-  const std::deque<LogEntry>& logs();
-  size_t size() const;
+  virtual void clearSearch();
+  virtual void toggle();
+  virtual bool handleInput(int val);
 
-  void addEntry(const rosgraph_msgs::LogConstPtr& msg);
+  protected:
+  virtual bool canFocus() const { return !show_results_; }
+  virtual bool canInput() const { return true; }
+  virtual int inputOffset() const { return 8; }
 
-private:
-  std::deque<LogEntry> logs_;
-  std::deque<LogEntry> new_logs_;
+  LogFilter& filter_;
 
-  std::mutex mutex_;
-
+  bool show_results_ = false;
 };
-typedef std::shared_ptr<LogStore> LogStorePtr;
+typedef std::shared_ptr<SearchPanel> SearchPanelPtr;
 
 }  // namespace log_view
 
-#endif  // LOG_VIEW_LOG_STORE_H_
+#endif  // LOG_VIEW_SEARCH_PANEL_H_
