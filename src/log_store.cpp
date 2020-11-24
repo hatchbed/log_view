@@ -30,7 +30,7 @@
 namespace log_view {
 
 const std::deque<LogEntry>& LogStore::logs() {
-  std::scoped_lock<std::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
   for (const auto& entry: new_logs_) {
     logs_.push_back(entry);
   }
@@ -43,7 +43,7 @@ size_t LogStore::size() const {
 }
 
 void LogStore::addEntry(const rosgraph_msgs::LogConstPtr& msg) {
-  std::scoped_lock<std::mutex> lock(mutex_);
+  std::lock_guard<std::mutex> lock(mutex_);
 
   new_logs_.push_back(LogEntry(*msg));
 }

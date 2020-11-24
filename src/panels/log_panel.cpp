@@ -267,10 +267,10 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
         int64_t start_idx = match_index + prefix.length() - shift_;
         int64_t end_idx = start_idx + match_size;
 
-        start_idx = std::min(static_cast<int64_t>(text.size()) - 2, std::max(0L, start_idx));
-        end_idx = std::min(static_cast<int64_t>(text.size()) - 2, std::max(0L, end_idx));
+        start_idx = std::min(static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), start_idx));
+        end_idx = std::min(static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), end_idx));
 
-        int64_t substr_len = std::max(1L, end_idx - start_idx);
+        int64_t substr_len = std::max(static_cast<int64_t>(1), end_idx - start_idx);
 
         mvwprintw(window_, row, start_idx, text.substr(start_idx, substr_len).c_str());
       }

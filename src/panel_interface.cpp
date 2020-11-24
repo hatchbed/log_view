@@ -247,7 +247,7 @@ void PanelInterface::drawScrollBar(size_t count, int height, int y, int x) {
   }
   else {
     int size = 2 * height - count;
-    cursor = std::max(0L, cursor - height);
+    cursor = std::max(static_cast<int64_t>(0), cursor - height);
 
     wattron(window_, A_REVERSE);
     for (size_t i = cursor; i < cursor + size; i++) {
@@ -326,7 +326,7 @@ void PanelInterface::move(int step) {
   }
 
   int64_t cursor = getCursor();
-  int64_t dst = std::max(0L, cursor + step);
+  int64_t dst = std::max(static_cast<int64_t>(0), cursor + step);
 
   moveTo(dst);
 }

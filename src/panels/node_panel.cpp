@@ -195,7 +195,7 @@ void NodePanel::moveTo(size_t index) {
   }
   else {
     selection += offset;
-    selection = std::max(0L, std::min(static_cast<int64_t>(getContentSize()) - 1, selection));
+    selection = std::max(static_cast<int64_t>(0), std::min(static_cast<int64_t>(getContentSize()) - 1, selection));
   }
   selected_ = nodes[selection].first;
 

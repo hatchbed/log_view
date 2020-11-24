@@ -202,7 +202,7 @@ void LogFilter::idleProcess() {
       int64_t min_idx = search_cursor_rev_ - 1000;
       for (int64_t i = search_cursor_rev_; i > min_idx && i >= 0; i--) {
         auto& index = log_indices_[i];
-        search_cursor_rev_ = std::max(0L, i - 1);
+        search_cursor_rev_ = std::max(static_cast<int64_t>(0), i - 1);
         if (contains(logs[index.index].text[index.line], search_, true)) {
           search_cursor_ = i;
           cursor_ = i + 1;
@@ -282,7 +282,7 @@ void LogFilter::prevMatch() {
     cursor--;
   }
 
-  search_cursor_rev_ = std::max(0L, cursor - (cursor_offset_ + 1));
+  search_cursor_rev_ = std::max(static_cast<int64_t>(0), cursor - (cursor_offset_ + 1));
 }
 
 void LogFilter::clearSearch() {
