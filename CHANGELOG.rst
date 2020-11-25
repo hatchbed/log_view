@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.1 (2020-11-24)
+------------------
 * Fixes for build farm.
 * Contributors: Marc Alban
 
