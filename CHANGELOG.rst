@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.2 (2020-11-26)
+------------------
 * Install binary log_viewer to package destination instead of global destination.
 * Contributors: Marc Alban
 
