@@ -94,19 +94,25 @@ bool LogPanel::handleMouse(const MEVENT& event) {
     mouse_down_ = true;
     startSelect(event.y - y_);
     forceRefresh();
+    return true;
   }
   else if (mouse_down_ && (event.bstate & REPORT_MOUSE_POSITION)) {
     endSelect(event.y - y_);
     forceRefresh();
+    return true;
   }
   else if (event.bstate & BUTTON1_RELEASED) {
     mouse_down_ = false;
     copyToClipboard();
+    return true;
   }
   else if (!mouse_down_ && (event.bstate & BUTTON3_PRESSED)) {
     filter_.clearSelect();
     forceRefresh();
+    return true;
   }
+
+  return false;
 }
 
 void LogPanel::resize(int height, int width, int y, int x) {

@@ -222,7 +222,9 @@ bool PanelInterface::setCursor() {
     wmove(window_, 0, inputOffset() + loc);
     show_panel(panel_);
     curs_set(1);
+    return true;
   }
+  return false;
 }
 
 void PanelInterface::drawScrollBar(size_t count, int height, int y, int x) {
