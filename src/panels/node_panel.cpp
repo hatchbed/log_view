@@ -129,6 +129,10 @@ void NodePanel::refresh() {
 }
 
 bool NodePanel::handleMouse(const MEVENT& event) {
+  if (hidden() || !encloses(event.y, event.x)) {
+    return false;
+  }
+
   if (event.bstate & BUTTON1_PRESSED) {
     int row = event.y - (y_ + 1);
     size_t cursor = getCursor();

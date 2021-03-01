@@ -90,6 +90,10 @@ void LogPanel::refresh() {
 }
 
 bool LogPanel::handleMouse(const MEVENT& event) {
+  if (hidden() || !encloses(event.y, event.x)) {
+    return false;
+  }
+
   if (event.bstate & BUTTON1_PRESSED) {
     mouse_down_ = true;
     startSelect(event.y - y_);

@@ -47,8 +47,14 @@ class HelpPanel : public PanelInterface {
   virtual ~HelpPanel() {}
   virtual void refresh();
   virtual void resize(int height, int width, int y, int x);
+  virtual bool handleMouse(const MEVENT& event) { return !hidden(); }
+  virtual bool handleInput(int key);
+  virtual bool focus() const { return !hidden(); }
 
   protected:
+  virtual bool canFocus() const { return !hidden(); }
+  virtual bool canNavigate() const { return !hidden(); }
+
   void printKeybinding(const HelpText& text);
 
   std::vector<HelpText> keys_;
