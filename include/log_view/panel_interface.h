@@ -47,7 +47,8 @@ class PanelInterface {
   virtual void resize(int height, int width, int y, int x);
   virtual bool handleInput(int key);
   virtual bool handleNavigation(int key);
-  virtual bool handleMouse(const MEVENT& event) { return true; }
+  virtual bool handleMouse(const MEVENT& event) { return false; }
+  virtual bool handleKey(int key) { return false; }
   virtual bool encloses(int y, int x);
 
   virtual void hide(bool enable);

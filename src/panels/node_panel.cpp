@@ -128,7 +128,31 @@ void NodePanel::refresh() {
   drawScrollBar(getContentSize(), getContentHeight(), 1, width_ - 2);
 }
 
+bool NodePanel::handleKey(int key) {
+  if (hidden()) {
+    return false;
+  }
+
+  if (key == ctrl('a')) {
+      filter_.selectAllNodes();
+
+      return true;
+  }
+  else if (key == ctrl('i')) {
+      filter_.invertNodes();
+
+      return true;
+  }
+
+  return false;
+}
+
+
 bool NodePanel::handleMouse(const MEVENT& event) {
+  if (hidden() || !encloses(event.y, event.x)) {
+    return false;
+  }
+
   if (event.bstate & BUTTON1_PRESSED) {
     int row = event.y - (y_ + 1);
     size_t cursor = getCursor();

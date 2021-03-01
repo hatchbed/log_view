@@ -89,7 +89,26 @@ void LogPanel::refresh() {
   drawScrollBar(getContentSize(), getContentHeight(), 0, width_ - 1);
 }
 
+bool LogPanel::handleKey(int key) {
+  if (hidden()) {
+    return false;
+  }
+
+  if (key == ctrl('a')) {
+      selectAll();
+
+      return true;
+  }
+
+  return false;
+}
+
+
 bool LogPanel::handleMouse(const MEVENT& event) {
+  if (hidden() || !encloses(event.y, event.x)) {
+    return false;
+  }
+
   if (event.bstate & BUTTON1_PRESSED) {
     mouse_down_ = true;
     startSelect(event.y - y_);

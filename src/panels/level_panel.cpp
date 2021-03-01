@@ -62,6 +62,10 @@ void LevelPanel::refresh() {
 }
 
 bool LevelPanel::handleMouse(const MEVENT& event) {
+  if (hidden() || !encloses(event.y, event.x)) {
+    return false;
+  }
+
   if (event.bstate & BUTTON1_PRESSED) {
     if (event.x < 7) {
       toggleDebug();

@@ -54,6 +54,8 @@ public:
   void setFatalLevel(bool enable);
   void setEnableNodeFilter(bool enable);
   void toggleNode(const std::string& node);
+  void selectAllNodes();
+  void invertNodes();
 
   bool getDebugLevel() const { return debug_level_; }
   bool getInfoLevel() const { return info_level_; }
