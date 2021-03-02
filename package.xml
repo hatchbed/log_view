@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>log_view</name>
-  <version>0.1.2</version>
+  <version>0.1.3</version>
   <description>
     The log_view package provides a ncurses based terminal GUI for
     viewing and filtering published ROS log messages.

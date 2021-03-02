@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.3 (2021-03-01)
+------------------
 * Prevent help screen text from wrapping.
 * Make help screen modal.
 * Add keybindings for selecting all nodes and inverting the node selection.
