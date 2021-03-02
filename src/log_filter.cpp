@@ -118,17 +118,30 @@ void LogFilter::toggleNode(const std::string& node) {
   if (element != nodes_.end()) {
     element->second.exclude = !element->second.exclude;
 
-    filter_nodes_ = false;
-    for (const auto& elem: nodes_) {
-      if (!elem.second.exclude) {
-        filter_nodes_ = true;
-        break;
-      }
-    }
-
+    filter_nodes_ = true;
     reset();
   }
 }
+
+void LogFilter::selectAllNodes() {
+  bool filter_nodes = filter_nodes_;
+  for (auto& elem: nodes_) {
+    elem.second.exclude = false;
+  }
+
+  filter_nodes_ = true;
+  reset();
+}
+
+void LogFilter::invertNodes() {
+  filter_nodes_ = true;
+  for (auto& elem: nodes_) {
+    elem.second.exclude = !elem.second.exclude;
+  }
+
+  reset();
+}
+
 
 void LogFilter::reset() {
   log_indices_.clear();

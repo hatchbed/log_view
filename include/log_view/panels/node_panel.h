@@ -39,6 +39,7 @@ class NodePanel : public PanelInterface {
   virtual ~NodePanel() {}
   virtual void refresh();
   virtual bool handleMouse(const MEVENT& event);
+  virtual bool handleKey(int key);
 
   protected:
   virtual bool canFocus() const { return true; }

@@ -27,6 +27,7 @@
 
 #include <log_view/panels/help_panel.h>
 
+#include <cmath>
 #include <log_view/utils.h>
 
 namespace log_view {
@@ -46,14 +47,15 @@ HelpPanel::HelpPanel(int height, int width, int y, int x) :
     {8, "F4", "Show/hide error level"},
     {9, "F5", "Show/hide fatal level"},
     {10, "F7", "Enable/disable node filter"},
-    {11, "CTRL-a", "Select all log lines and copy to clipboard"},
-    {12, "CTRL-n", "Show/hide node selection"},
-    {13, "CTRL-s", "Search for matching string"},
-    {14, "CTRL-x", "Clear search"},
-    {15, "Backspace", "Prev match"},
-    {16, "Enter", "Next match"},
-    {17, "CTRL-e", "Enable/disable text exclude filter"},
-    {18, "CTRL-f", "Enable/disable text include filter"}})
+    {11, "CTRL-a", "Select all"},
+    {12, "CTRL-i", "Invert node selection"},
+    {13, "CTRL-n", "Show/hide node selection"},
+    {14, "CTRL-s", "Search for matching string"},
+    {15, "CTRL-x", "Clear search"},
+    {16, "Backspace", "Prev match"},
+    {17, "Enter", "Next match"},
+    {18, "CTRL-e", "Enable/disable text exclude filter"},
+    {19, "CTRL-f", "Enable/disable text include filter"}})
 {
   for (const auto& key: keys_) {
     longest_key_ = std::max(longest_key_, key.key.length());
@@ -81,15 +83,36 @@ void HelpPanel::resize(int height, int width, int y, int x) {
   PanelInterface::resize(height, w, y, x);
 }
 
+bool HelpPanel::handleKey(int key) {
+  if (hidden()) {
+    return false;
+  }
+
+  if (key == ctrl('h')) {
+      hide(visible());
+  }
+  else if (key == KEY_RESIZE || key == ctrl('q') || key == ctrl('c')) {
+    return false;
+  }
+
+  return true;
+}
+
 void HelpPanel::printKeybinding(const HelpText& help_text) {
     mvwprintw(window_,  help_text.line, 3, help_text.key.c_str());
-    mvwprintw(window_,  help_text.line, longest_key_ + 8, help_text.description.c_str());
+
+    int max_size = std::max(0, width() - (static_cast<int>(longest_key_) + 10));
+    auto desc = help_text.description;
+    if (desc.size() > max_size) {
+      desc.resize(max_size);
+    }
+    mvwprintw(window_,  help_text.line, longest_key_ + 8, desc.c_str());
 
     int line_start = help_text.key.length() + 4;
     int line_end = longest_key_ + 7;
 
     wattron(window_, COLOR_PAIR(CP_GREY));
-    mvwhline(window_, help_text.line, help_text.key.length() + 4, 0, line_end - line_start);
+    mvwhline(window_, help_text.line, line_start, 0, line_end - line_start);
     wattroff(window_, COLOR_PAIR(CP_GREY));
 }
 

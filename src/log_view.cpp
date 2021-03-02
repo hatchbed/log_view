@@ -147,7 +147,7 @@ void LogView::update() {
           for (size_t i = 0; i < panels_.size(); i++) {
             size_t idx = panels_.size() - (i + 1);
             auto& panel = panels_[idx];
-            if (!panel->hidden() && panel->encloses(event.y, event.x) && panel->handleMouse(event)) {
+            if (panel->handleMouse(event)) {
               break;
             }
           }
@@ -162,8 +162,16 @@ void LogView::update() {
   }
 
   if (!key_used) {
-    for (auto& panel: panels_) {
-      if (panel->focus()) {
+    std::for_each(panels_.rbegin(), panels_.rend(), [&](PanelInterfacePtr& panel) {
+      if (!key_used) {
+        key_used = panel->handleKey(ch);
+      }
+    });
+  }
+
+  if (!key_used) {
+    std::for_each(panels_.rbegin(), panels_.rend(), [&](PanelInterfacePtr& panel) {
+      if (!key_used && panel->focus()) {
         key_used = panel->handleInput(ch);
         if (key_used) {
           if (!panel->focus()) {
@@ -173,10 +181,9 @@ void LogView::update() {
           if (!panel->visible()) {
             refreshLayout();
           }
-          break;
         }
       }
-    }
+    });
   }
 
   if (!key_used && !mouse_down_) {
@@ -241,9 +248,6 @@ void LogView::update() {
         focusNext(exclude_panel_);
       }
       refreshLayout();
-    }
-    else if (ch == ctrl('a')) {
-      log_panel_->selectAll();
     }
     else if (ch == ctrl('h')) {
       help_panel_->hide(help_panel_->visible());

@@ -2,6 +2,12 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Prevent help screen text from wrapping.
+* Make help screen modal.
+* Add keybindings for selecting all nodes and inverting the node selection.
+
 0.1.2 (2020-11-26)
 ------------------
 * Install binary log_viewer to package destination instead of global destination.
