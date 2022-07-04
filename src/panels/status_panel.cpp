@@ -33,13 +33,10 @@ void StatusPanel::refresh() {
   wattron(window_, A_REVERSE);
   std::string clear(width_, ' ');
   mvwprintw(window_, 0, 0, clear.c_str());
-  mvwprintw(window_, 0, 0, "status: %s  logs: %zu", connected_ ? "connected" : "not connected", logs_->size());
+  mvwprintw(window_, 0, 0, "logs: %zu", logs_->size());
 
-  std::string system_time = toString(system_time_.toSec(), 2);
-  std::string ros_time = "--";
-  if (ros_time_ != ros::Time(0)) {
-    ros_time =  toString(ros_time_.toSec(), 2);
-  }
+  std::string system_time = toString(system_time_.seconds(), 2);
+  std::string ros_time =  toString(ros_time_.seconds(), 2);
 
   std::string time_str = "ros time: " + ros_time + "  system time: " + system_time;
   mvwprintw(window_, 0, width_ - time_str.size(), time_str.c_str());

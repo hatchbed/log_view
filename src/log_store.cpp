@@ -42,7 +42,7 @@ size_t LogStore::size() const {
   return logs_.size();
 }
 
-void LogStore::addEntry(const rosgraph_msgs::LogConstPtr& msg) {
+void LogStore::addEntry(const rcl_interfaces::msg::Log::SharedPtr msg) {
   std::lock_guard<std::mutex> lock(mutex_);
 
   new_logs_.push_back(LogEntry(*msg));

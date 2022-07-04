@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<package format="2">
+<package format="3">
   <name>log_view</name>
   <version>0.1.3</version>
   <description>
@@ -17,9 +17,17 @@
 
   <buildtool_depend>catkin</buildtool_depend>
 
-  <depend>roscpp</depend>
+  <depend>rclcpp</depend>
+  <depend>rcl_interfaces</depend>
   <depend>libncurses-dev</depend>
 
   <exec_depend>xclip</exec_depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 
 </package>

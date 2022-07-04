@@ -317,27 +317,27 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
     node->second.count++;
   }
 
-  if (entry.level == rosgraph_msgs::Log::DEBUG) {
+  if (entry.level == rcl_interfaces::msg::Log::DEBUG) {
     if (!debug_level_) {
       return false;
     }
   }
-  else if (entry.level == rosgraph_msgs::Log::INFO) {
+  else if (entry.level == rcl_interfaces::msg::Log::INFO) {
     if (!info_level_) {
       return false;
     }
   }
-  else if (entry.level == rosgraph_msgs::Log::WARN) {
+  else if (entry.level == rcl_interfaces::msg::Log::WARN) {
     if (!warn_level_) {
       return false;
     }
   }
-  else if (entry.level == rosgraph_msgs::Log::ERROR) {
+  else if (entry.level == rcl_interfaces::msg::Log::ERROR) {
     if (!error_level_) {
       return false;
     }
   }
-  else if (entry.level == rosgraph_msgs::Log::FATAL) {
+  else if (entry.level == rcl_interfaces::msg::Log::FATAL) {
     if (!fatal_level_) {
       return false;
     }

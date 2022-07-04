@@ -30,6 +30,7 @@
 
 #include <log_view/panel_interface.h>
 #include <log_view/log_store.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace log_view {
 
@@ -39,14 +40,12 @@ class StatusPanel : public PanelInterface {
   virtual ~StatusPanel() {}
   virtual void refresh();
 
-  virtual void setConnected(bool connected) { connected_ = connected; }
-  virtual void setRosTime(const ros::Time& time) { ros_time_ = time; }
-  virtual void setSystemTime(const ros::WallTime& time) { system_time_ = time; }
+  virtual void setRosTime(const rclcpp::Time& time) { ros_time_ = time; }
+  virtual void setSystemTime(const rclcpp::Time& time) { system_time_ = time; }
 
   protected:
-  bool connected_ = false;
-  ros::Time ros_time_ = ros::Time(0);
-  ros::WallTime system_time_ = ros::WallTime(0);
+  rclcpp::Time ros_time_ = rclcpp::Time(0);
+  rclcpp::Time system_time_ = rclcpp::Time(0);
   LogStorePtr logs_;
 };
 typedef std::shared_ptr<StatusPanel> StatusPanelPtr;

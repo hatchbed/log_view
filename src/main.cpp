@@ -27,19 +27,20 @@
 
 #include <log_view/log_store.h>
 #include <log_view/log_view.h>
-#include <rosgraph_msgs/Log.h>
+#include <rcl_interfaces/msg/log.hpp>
 
 #include <csignal>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 void handleSigint(int sig);
 
-class LogViewer {
+class LogViewer : public rclcpp::Node {
   public:
   static bool exit;
 
   LogViewer() :
+    rclcpp::Node("log_viewer"),
     logs_(std::make_shared<log_view::LogStore>()),
     view_(logs_)
   {
@@ -47,38 +48,24 @@ class LogViewer {
   }
 
   void run() {
-    bool connected = false;
+    rclcpp::Clock system_clock;
     view_.init();
+    sub_ = create_subscription<rcl_interfaces::msg::Log>("/rosout", 10000, std::bind(&LogViewer::handleMsg, this, std::placeholders::_1));
     while (!exit && !view_.exited()) {
-      bool master_status = ros::master::check();
-      view_.setConnected(master_status);
-      view_.setSystemTime(ros::WallTime::now());
-      if (!connected && master_status) {
-        ros::start();
-        signal(SIGINT, handleSigint);
-        ros::NodeHandle node;
-        sub_ = node.subscribe("/rosout_agg", 10000, &LogViewer::handleMsg, this);
-      }
-      else if (connected && !master_status) {
-        ros::shutdown();
-      }
-      else if (connected && master_status) {
-        ros::spinOnce();
-        view_.setRosTime(ros::Time::now());
-      }
-
-      connected = master_status;
+      view_.setSystemTime(system_clock.now());
+      view_.setRosTime(now());
+      rclcpp::spin_some(get_node_base_interface());
       view_.update();
     }
     view_.close();
   }
 
-  void handleMsg(const rosgraph_msgs::LogConstPtr& msg) {
+  void handleMsg(const rcl_interfaces::msg::Log::SharedPtr msg) {
     logs_->addEntry(msg);
   }
 
   private:
-    ros::Subscriber sub_;
+    rclcpp::Subscription<rcl_interfaces::msg::Log>::SharedPtr sub_;
 
     log_view::LogStorePtr logs_;
     log_view::LogView view_;
@@ -90,12 +77,14 @@ void handleSigint(int sig)
   LogViewer::exit = true;
 }
 
-int main(int argc, char **argv)
+int main(int argc, char ** argv)
 {
   // prevent ncurses from pausing for 1 second on ESC key
   char escape_var[] = "ESCDELAY=0";
   putenv(escape_var);
-  ros::init(argc, argv, "log_viewer", ros::init_options::AnonymousName | ros::init_options::NoRosout);
+
+  rclcpp::init(argc, argv);
+  signal(SIGINT, handleSigint);
 
   LogViewer log_viewer;
   log_viewer.run();

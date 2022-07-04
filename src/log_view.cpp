@@ -113,15 +113,11 @@ bool LogView::exited() const {
   return exited_;
 }
 
-void LogView::setConnected(bool connected) {
-  status_panel_->setConnected(connected);
-}
-
-void LogView::setRosTime(const ros::Time& time) {
+void LogView::setRosTime(const rclcpp::Time& time) {
   status_panel_->setRosTime(time);
 }
 
-void LogView::setSystemTime(const ros::WallTime& time) {
+void LogView::setSystemTime(const rclcpp::Time& time) {
   status_panel_->setSystemTime(time);
 }
 

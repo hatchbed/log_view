@@ -29,8 +29,8 @@
 #define LOG_VIEW_DATATYPES_H_
 
 #include <log_view/utils.h>
-#include <ros/ros.h>
-#include <rosgraph_msgs/Log.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rcl_interfaces/msg/log.hpp>
 
 namespace log_view {
 
@@ -43,9 +43,8 @@ struct LogEntry
 {
   LogEntry() = default;
   LogEntry(const LogEntry& entry) = default;
-  explicit LogEntry(const rosgraph_msgs::Log& log) :
-    stamp(log.header.stamp),
-    seq(log.header.seq),
+  explicit LogEntry(const rcl_interfaces::msg::Log& log) :
+    stamp(log.stamp),
     level(log.level),
     node(log.name),
     file(log.file),
@@ -54,8 +53,7 @@ struct LogEntry
     text(split(log.msg, '\n'))
   {}
 
-  ros::Time stamp;
-  uint32_t seq;
+  rclcpp::Time stamp;
   uint8_t level;
   std::string node;
   std::string file;

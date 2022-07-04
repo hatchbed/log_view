@@ -32,7 +32,7 @@
 #include <mutex>
 
 #include <log_view/datatypes.h>
-#include <rosgraph_msgs/Log.h>
+#include <rcl_interfaces/msg/log.hpp>
 
 namespace log_view {
 
@@ -43,7 +43,7 @@ public:
   const std::deque<LogEntry>& logs();
   size_t size() const;
 
-  void addEntry(const rosgraph_msgs::LogConstPtr& msg);
+  void addEntry(const rcl_interfaces::msg::Log::SharedPtr msg);
 
 private:
   std::deque<LogEntry> logs_;

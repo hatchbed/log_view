@@ -41,7 +41,7 @@
 #include <log_view/panels/status_panel.h>
 #include <curses.h>
 #include <panel.h>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 namespace log_view {
 
@@ -55,9 +55,8 @@ public:
 
   bool exited() const;
 
-  void setConnected(bool connected);
-  void setRosTime(const ros::Time& time);
-  void setSystemTime(const ros::WallTime& time);
+  void setRosTime(const rclcpp::Time& time);
+  void setSystemTime(const rclcpp::Time& time);
 
   void update();
 
