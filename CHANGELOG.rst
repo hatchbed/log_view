@@ -2,6 +2,11 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.0 (2022-07-04)
+------------------
+* Port to ROS2
+* Contributors: Marc Alban
+
 0.1.3 (2021-03-01)
 ------------------
 * Prevent help screen text from wrapping.
