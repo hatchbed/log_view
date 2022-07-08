@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.1 (2022-07-07)
+------------------
 * Remove unused boost include.
 * Contributors: Marc Alban
 
