@@ -30,8 +30,6 @@
 #include <cstdlib>
 #include <sstream>
 
-#include <boost/algorithm/string/find.hpp>
-
 namespace log_view {
 
 std::string toString(double val, int precision) {
