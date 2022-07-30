@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.2 (2022-07-30)
+------------------
 * Improve message handling so that log messages are not dropped. (`#8 <https://github.com/hatchbed/log_view/issues/8>`_)
 * Contributors: Marc Alban
 
