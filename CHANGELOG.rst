@@ -2,6 +2,11 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Improve message handling so that log messages are not dropped. (`#8 <https://github.com/hatchbed/log_view/issues/8>`_)
+* Contributors: Marc Alban
+
 0.2.1 (2022-07-07)
 ------------------
 * Remove unused boost include.
