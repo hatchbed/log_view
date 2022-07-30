@@ -25,13 +25,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <chrono>
+#include <csignal>
+#include <thread>
+
 #include <log_view/log_store.h>
 #include <log_view/log_view.h>
 #include <rcl_interfaces/msg/log.hpp>
-
-#include <csignal>
-
 #include <rclcpp/rclcpp.hpp>
+
+using namespace std::chrono_literals;
 
 void handleSigint(int sig);
 
@@ -51,13 +54,17 @@ class LogViewer : public rclcpp::Node {
     rclcpp::Clock system_clock;
     view_.init();
     sub_ = create_subscription<rcl_interfaces::msg::Log>("/rosout", 10000, std::bind(&LogViewer::handleMsg, this, std::placeholders::_1));
+
+    std::thread ros_thread([&](){ rclcpp::spin(get_node_base_interface()); });
+
     while (!exit && !view_.exited()) {
       view_.setSystemTime(system_clock.now());
       view_.setRosTime(now());
-      rclcpp::spin_some(get_node_base_interface());
       view_.update();
+      std::this_thread::sleep_for(30ms);
     }
     view_.close();
+    ros_thread.join();
   }
 
   void handleMsg(const rcl_interfaces::msg::Log::SharedPtr msg) {
@@ -75,6 +82,7 @@ bool LogViewer::exit = false;
 void handleSigint(int sig)
 {
   LogViewer::exit = true;
+  rclcpp::shutdown();
 }
 
 int main(int argc, char ** argv)
