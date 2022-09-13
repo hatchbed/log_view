@@ -64,7 +64,7 @@ void LogView::init() {
   keypad(stdscr, true);
   mouseinterval(0);
   mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
-  printf("\033[?1003h\n");
+  printf("\033[?1003h\n");  // Enable mouse move events
 
   refresh();
 
@@ -106,6 +106,7 @@ void LogView::init() {
 }
 
 void LogView::close() {
+  printf("\033[?1003l\n"); // Disable mouse movement events
   endwin();
 }
 
