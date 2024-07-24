@@ -2,6 +2,11 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix build error caused by mvwprintw. (`#19 <https://github.com/hatchbed/log_view/issues/19>`_)
+* Contributors: Marc Alban
+
 0.2.3 (2024-07-08)
 ------------------
 * Use default C++ version (`#16 <https://github.com/hatchbed/log_view/issues/16>`_)
