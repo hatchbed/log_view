@@ -33,7 +33,7 @@ void LevelPanel::refresh() {
   wattron(window_, A_REVERSE);
   wattron(window_, A_BOLD);
   std::string clear(width_, ' ');
-  mvwprintw(window_, 0, 0, clear.c_str());
+  mvwprintw(window_, 0, 0, "%s", clear.c_str());
   mvwprintw(window_, 0, 0, " debug  info  warn  error  fatal      all nodes");
   wattroff(window_, A_BOLD);
   mvwprintw(window_, 0, width_ - 17, "CTRL+h: view help");

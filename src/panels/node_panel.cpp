@@ -99,7 +99,7 @@ void NodePanel::refresh() {
       cropped = true;
     }
 
-    mvwprintw(window_, i + 1, 1, text.c_str());
+    mvwprintw(window_, i + 1, 1, "%s", text.c_str());
 
     if (hover) {
       wattroff(window_, A_BOLD);

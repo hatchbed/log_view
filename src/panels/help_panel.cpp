@@ -99,14 +99,14 @@ bool HelpPanel::handleKey(int key) {
 }
 
 void HelpPanel::printKeybinding(const HelpText& help_text) {
-    mvwprintw(window_,  help_text.line, 3, help_text.key.c_str());
+    mvwprintw(window_,  help_text.line, 3, "%s", help_text.key.c_str());
 
     int max_size = std::max(0, width() - (static_cast<int>(longest_key_) + 10));
     auto desc = help_text.description;
     if (desc.size() > max_size) {
       desc.resize(max_size);
     }
-    mvwprintw(window_,  help_text.line, longest_key_ + 8, desc.c_str());
+    mvwprintw(window_,  help_text.line, longest_key_ + 8, "%s", desc.c_str());
 
     int line_start = help_text.key.length() + 4;
     int line_end = longest_key_ + 7;

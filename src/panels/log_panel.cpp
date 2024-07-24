@@ -279,7 +279,7 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
     text.resize(width_);
   }
 
-  mvwprintw(window_, row, 0, text.c_str());
+  mvwprintw(window_, row, 0, "%s", text.c_str());
 
   if (matched) {
     wattron(window_, COLOR_PAIR(CP_DEFAULT_CYAN));
@@ -297,7 +297,7 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
 
         int64_t substr_len = std::max(static_cast<int64_t>(1), end_idx - start_idx);
 
-        mvwprintw(window_, row, start_idx, text.substr(start_idx, substr_len).c_str());
+        mvwprintw(window_, row, start_idx, "%s", text.substr(start_idx, substr_len).c_str());
       }
     }
     wattroff(window_, COLOR_PAIR(CP_DEFAULT_CYAN));
