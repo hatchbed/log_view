@@ -2,6 +2,12 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.2.3 (2024-07-08)
+------------------
+* Use default C++ version (`#16 <https://github.com/hatchbed/log_view/issues/16>`_)
+* Disable mouse move events on exit. (`#12 <https://github.com/hatchbed/log_view/issues/12>`_)
+* Contributors: Marc Alban
+
 0.2.2 (2022-07-30)
 ------------------
 * Improve message handling so that log messages are not dropped. (`#8 <https://github.com/hatchbed/log_view/issues/8>`_)
