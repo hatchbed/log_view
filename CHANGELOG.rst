@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.4 (2024-07-24)
+------------------
 * Fix build error caused by mvwprintw. (`#19 <https://github.com/hatchbed/log_view/issues/19>`_)
 * Contributors: Marc Alban
 
