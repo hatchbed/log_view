@@ -2,6 +2,11 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix mvwprintw format-security error
+* Contributors: Marc Alban
+
 0.2.4 (2024-07-24)
 ------------------
 * Fix build error caused by mvwprintw. (`#19 <https://github.com/hatchbed/log_view/issues/19>`_)
