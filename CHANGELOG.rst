@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.5 (2024-11-25)
+------------------
 * Fix mvwprintw format-security error
 * Contributors: Marc Alban
 
