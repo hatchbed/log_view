@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.2.7 (2026-02-18)
+------------------
 * Replace ament_target_dependencies with target_link_libraries.
 * Contributors: Marc Alban
 
