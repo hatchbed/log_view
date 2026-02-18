@@ -17,8 +17,6 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <build_depend>ament_cmake_target_dependencies</build_depend>
-
   <depend>rclcpp</depend>
   <depend>rcl_interfaces</depend>
   <depend>libncurses-dev</depend>

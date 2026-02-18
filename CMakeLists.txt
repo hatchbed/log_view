@@ -33,10 +33,10 @@ add_library(${PROJECT_NAME}
   src/panels/search_panel.cpp
   src/panels/status_panel.cpp
 )
-target_link_libraries(${PROJECT_NAME} ${CURSES_LIBRARIES} ${CURSES_PANEL_LIBRARY})
-ament_target_dependencies(${PROJECT_NAME}
-  rclcpp
-  rcl_interfaces
+target_link_libraries(${PROJECT_NAME}
+  ${CURSES_LIBRARIES}
+  ${CURSES_PANEL_LIBRARY}
+  rclcpp::rclcpp
 )
 
 add_executable(log_viewer src/main.cpp)
