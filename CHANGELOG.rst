@@ -2,6 +2,11 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Replace ament_target_dependencies with target_link_libraries.
+* Contributors: Marc Alban
+
 0.2.5 (2024-11-25)
 ------------------
 * Fix mvwprintw format-security error
