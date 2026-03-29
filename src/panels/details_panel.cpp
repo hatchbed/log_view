@@ -47,6 +47,17 @@ void DetailsPanel::refresh() {
 
   int64_t selected = filter_.getSelectEnd();
 
+  int max_width = getContentWidth();
+  auto printWrapped = [&](int row, const std::string& text) -> int {
+    mvwaddnstr(window_, row++, 1, text.c_str(), max_width);
+    size_t offset = max_width;
+    while (offset < text.size()) {
+      mvwaddnstr(window_, row++, 3, text.c_str() + offset, max_width - 2);
+      offset += max_width - 2;
+    }
+    return row;
+  };
+
   if (selected < 0) {
     mvwprintw(window_, 1, 1, "stamp: ");
     mvwprintw(window_, 2, 1, "level: ");
@@ -57,8 +68,8 @@ void DetailsPanel::refresh() {
   } else {
     const auto& entry = filter_.getEntry(selected);
 
-    std::string stamp_text = "stamp: " + toString(entry.stamp.seconds(), 4);
-    mvwprintw(window_, 1, 1, "%s", stamp_text.c_str());
+    int row = 1;
+    row = printWrapped(row, "stamp: " + toString(entry.stamp.seconds(), 4));
 
     std::string level_text = "level: ";
     if (entry.level == rcl_interfaces::msg::Log::DEBUG) {
@@ -74,20 +85,13 @@ void DetailsPanel::refresh() {
     } else {
       level_text += std::to_string(entry.level);
     }
-    mvwprintw(window_, 2, 1, "%s", level_text.c_str());
-
-    std::string file_text = "file: " + entry.file;
-    mvwprintw(window_, 3, 1, "%s", file_text.c_str());
-
-    std::string function_text = "function: " + entry.function;
-    mvwprintw(window_, 4, 1, "%s", function_text.c_str());
-
-    std::string line_text = "line: " + std::to_string(entry.line);
-    mvwprintw(window_, 5, 1, "%s", line_text.c_str());
-
-    mvwprintw(window_, 6, 1, "message: ");
-    for (size_t i = 0; i < entry.text.size(); i++) {
-      mvwprintw(window_, 7 + i, 1, "%s", entry.text[i].c_str());
+    row = printWrapped(row, level_text);
+    row = printWrapped(row, "file: " + entry.file);
+    row = printWrapped(row, "function: " + entry.function);
+    row = printWrapped(row, "line: " + std::to_string(entry.line));
+    mvwprintw(window_, row++, 1, "message: ");
+    for (const auto& line : entry.text) {
+      row = printWrapped(row, line);
     }
   }
 
