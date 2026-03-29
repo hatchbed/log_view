@@ -13,7 +13,7 @@
   <author email="marcalban@hatchbed.com">Marc Alban</author>
   <maintainer email="marcalban@hatchbed.com">Marc Alban</maintainer>
 
-  <license>BSD</license>
+  <license>BSD-3-Clause</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
