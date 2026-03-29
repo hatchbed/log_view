@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>log_view</name>
-  <version>0.2.7</version>
+  <version>0.3.0</version>
   <description>
     The log_view package provides a ncurses based terminal GUI for
     viewing and filtering published ROS log messages.
@@ -13,7 +13,7 @@
   <author email="marcalban@hatchbed.com">Marc Alban</author>
   <maintainer email="marcalban@hatchbed.com">Marc Alban</maintainer>
 
-  <license>BSD</license>
+  <license>BSD-3-Clause</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 

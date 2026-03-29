@@ -1,29 +1,30 @@
-/**
- * Copyright 2020 Hatchbed L.L.C.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holder nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2020 Hatchbed L.L.C.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the copyright holder nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <log_view/panel_interface.h>
 
@@ -72,39 +73,33 @@ bool PanelInterface::handleInput(int val) {
   if (val < 256 && isprint(val)) {
     if (input_loc_ == -1 || input_loc_ >= input_text_.size()) {
       input_text_ += val;
-    }
-    else {
+    } else {
       input_loc_ = std::max(0, input_loc_);
       input_text_.insert(input_loc_, 1, static_cast<char>(val));
       input_loc_++;
     }
     key_used = true;
-  }
-  else if (!input_text_.empty() && val == KEY_BACKSPACE && (input_loc_ == -1 || input_loc_ > 0)) {
+  } else if (!input_text_.empty() && val == KEY_BACKSPACE && (input_loc_ == -1 || input_loc_ > 0)) {
     if (input_loc_ == -1 || input_loc_ >= input_text_.size()) {
       input_text_.pop_back();
-    }
-    else {
+    } else {
       input_text_.erase(input_loc_ - 1, 1);
       input_loc_--;
     }
     key_used = true;
-  }
-  else if (!input_text_.empty() && val == KEY_DC && input_loc_ != -1) {
+  } else if (!input_text_.empty() && val == KEY_DC && input_loc_ != -1) {
     input_text_.erase(input_loc_, 1);
     if (input_loc_ >= input_text_.size()) {
       input_loc_ = -1;
     }
     key_used = true;
-  }
-  else if (input_loc_ != 0 && val == KEY_LEFT) {
+  } else if (input_loc_ != 0 && val == KEY_LEFT) {
     if (input_loc_ == -1) {
       input_loc_ = input_text_.size();
     }
     input_loc_--;
     key_used = true;
-  }
-  else if (input_loc_ != -1 && val == KEY_RIGHT) {
+  } else if (input_loc_ != -1 && val == KEY_RIGHT) {
     input_loc_++;
     if (input_loc_ >= input_text_.size()) {
       input_loc_ = -1;
@@ -134,36 +129,28 @@ bool PanelInterface::handleNavigation(int key) {
   if (key == KEY_NPAGE) {
     pageDown();
     key_used = true;
-  }
-  else if (key == KEY_PPAGE) {
+  } else if (key == KEY_PPAGE) {
     pageUp();
     key_used = true;
-  }
-  else if (key == KEY_UP) {
+  } else if (key == KEY_UP) {
     move(-1);
     key_used = true;
-  }
-  else if (key == KEY_DOWN) {
+  } else if (key == KEY_DOWN) {
     move(1);
     key_used = true;
-  }
-  else if (key == KEY_END) {
+  } else if (key == KEY_END) {
     follow(true);
     key_used = true;
-  }
-  else if (key == KEY_HOME) {
+  } else if (key == KEY_HOME) {
     moveTo(0);
     key_used = true;
-  }
-  else if (key == KEY_LEFT) {
+  } else if (key == KEY_LEFT) {
     shift(-5);
     key_used = true;
-  }
-  else if (key == KEY_RIGHT) {
+  } else if (key == KEY_RIGHT) {
     shift(5);
     key_used = true;
-  }
-  else if (canSelect() && key == ' ') {
+  } else if (canSelect() && key == ' ') {
     select();
     key_used = true;
   }
@@ -192,8 +179,7 @@ void PanelInterface::hide(bool enable) {
     hide_panel(panel_);
     activate(false);
     focus_ = false;
-  }
-  else {
+  } else {
     show_panel(panel_);
     activate(true);
     input_loc_ = -1;
@@ -246,8 +232,7 @@ void PanelInterface::drawScrollBar(size_t count, int height, int y, int x) {
     wattron(window_, A_REVERSE);
     mvwprintw(window_, y + scroll_loc, x, " ");
     wattroff(window_, A_REVERSE);
-  }
-  else {
+  } else {
     int size = 2 * height - count;
     cursor = std::max(static_cast<int64_t>(0), cursor - height);
 
@@ -300,8 +285,7 @@ void PanelInterface::follow(bool enable) {
     last_content_size_ = 0;
     last_cursor_ = -1;
     setCursor(-1);
-  }
-  else if (!enable && following()) {
+  } else if (!enable && following()) {
     setCursor(getContentSize());
   }
 }
@@ -352,8 +336,7 @@ void PanelInterface::shift(int cols) {
   if (cols < 0) {
     shift += cols;
     shift = std::max(0, shift);
-  }
-  else if (shift_ + getContentWidth() < max_length_) {
+  } else if (shift_ + getContentWidth() < max_length_) {
     shift += cols;
   }
 

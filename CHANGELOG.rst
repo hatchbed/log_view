@@ -2,6 +2,12 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.3.0 (2026-03-29)
+------------------
+* Add details panel with per-message metadata display.
+* Enable static analysis and linting tests.
+* Contributors: Marc Alban
+
 0.2.7 (2026-02-18)
 ------------------
 * Replace ament_target_dependencies with target_link_libraries.

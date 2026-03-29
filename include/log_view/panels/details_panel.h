@@ -1,4 +1,4 @@
-// Copyright 2020 Hatchbed L.L.C.
+// Copyright 2026 Hatchbed L.L.C.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -28,30 +28,27 @@
 
 #pragma once
 
-#include <deque>
 #include <memory>
-#include <mutex>
 
-#include <log_view/datatypes.h>
-#include <rcl_interfaces/msg/log.hpp>
+#include <log_view/log_filter.h>
+#include <log_view/panel_interface.h>
 
 namespace log_view {
 
-class LogStore {
-public:
-  LogStore() = default;
+class DetailsPanel : public PanelInterface {
+  public:
+  DetailsPanel(int height, int width, int y, int x, const LogFilter& filter)
+  : PanelInterface(height, width, y, x), filter_(filter) {}
+  virtual ~DetailsPanel() {}
+  virtual void refresh();
 
-  const std::deque<LogEntry>& logs();
-  size_t size() const;
+  protected:
+  virtual size_t getContentSize() const { return 6; }
+  virtual int getContentHeight() const { return height_ - 2; }
+  virtual int getContentWidth() const;
 
-  void addEntry(const rcl_interfaces::msg::Log::SharedPtr msg);
-
-private:
-  std::deque<LogEntry> logs_;
-  std::deque<LogEntry> new_logs_;
-
-  std::mutex mutex_;
+  const LogFilter& filter_;
 };
-typedef std::shared_ptr<LogStore> LogStorePtr;
+typedef std::shared_ptr<DetailsPanel> DetailsPanelPtr;
 
 }  // namespace log_view

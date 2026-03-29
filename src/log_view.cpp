@@ -1,33 +1,33 @@
-/**
- * Copyright 2020 Hatchbed L.L.C.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holder nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2020 Hatchbed L.L.C.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the copyright holder nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <log_view/log_view.h>
 
-#include <clocale>
 #include <cctype>
 #include <clocale>
 #include <string>
@@ -39,9 +39,7 @@ namespace log_view {
 LogView::LogView(LogStorePtr& logs) :
   logs_(logs),
   log_filter_(logs_)
-{
-
-}
+{}
 
 LogView::~LogView() {
   close();
@@ -89,11 +87,17 @@ void LogView::init() {
   exclude_panel_->hide(true);
   panels_.push_back(exclude_panel_);
 
-  node_panel_ = std::make_shared<NodePanel>(LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
+  node_panel_ = std::make_shared<NodePanel>(
+    LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
   node_panel_->hide(true);
   panels_.push_back(node_panel_);
 
-  help_panel_ = std::make_shared<HelpPanel>(21, COLS - 8, 2, 4);
+  details_panel_ = std::make_shared<DetailsPanel>(
+    LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
+  details_panel_->hide(true);
+  panels_.push_back(details_panel_);
+
+  help_panel_ = std::make_shared<HelpPanel>(22, COLS - 8, 2, 4);
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
 
@@ -106,7 +110,7 @@ void LogView::init() {
 }
 
 void LogView::close() {
-  printf("\033[?1003l\n"); // Disable mouse movement events
+  printf("\033[?1003l\n");  // Disable mouse movement events
   endwin();
 }
 
@@ -135,8 +139,7 @@ void LogView::update() {
       if (event.bstate & BUTTON4_PRESSED) {
         ch = KEY_UP;
         key_used = false;
-      }
-      else {
+      } else {
         key_used = true;
 
         bool pressed = event.bstate & (BUTTON1_PRESSED | BUTTON2_PRESSED | BUTTON3_PRESSED);
@@ -148,9 +151,8 @@ void LogView::update() {
               break;
             }
           }
-        }
-        else {
-          for (auto& panel: panels_) {
+        } else {
+          for (auto& panel : panels_) {
             panel->handleMouse(event);
           }
         }
@@ -194,86 +196,74 @@ void LogView::update() {
   }
 
   if (!key_used && !mouse_down_) {
-    if (ch == KEY_RESIZE)
-    {
+    if (ch == KEY_RESIZE) {
       refreshLayout();
-    }
-    else if (/*ch == KEY_ESC || */ch == ctrl('q') || ch == ctrl('c')) {
+    } else if (/*ch == KEY_ESC || */ch == ctrl('q') || ch == ctrl('c')) {
       exited_ = true;
-    }
-    else if (ch == '\t') {
+    } else if (ch == '\t') {
       tab();
-    }
-    else if (ch == ctrl('s')) {
+    } else if (ch == ctrl('s')) {
       search_panel_->toggle();
       if (search_panel_->focus()) {
         unfocusOthers(search_panel_);
-      }
-      else {
+      } else {
         focusNext(search_panel_);
       }
       refreshLayout();
-    }
-    else if (ch == ctrl('x')) {
+    } else if (ch == ctrl('x')) {
       search_panel_->clearSearch();
       refreshLayout();
-    }
-    else if (ch == KEY_BACKSPACE) {
+    } else if (ch == KEY_BACKSPACE) {
       log_filter_.prevMatch();
       log_panel_->forceRefresh();
-    }
-    else if (ch == KEY_ENTER_VAL) {
+    } else if (ch == KEY_ENTER_VAL) {
       log_filter_.nextMatch();
       log_panel_->forceRefresh();
-    }
-    else if (ch == ctrl('e')) {
+    } else if (ch == ctrl('e')) {
       exclude_panel_->hide(exclude_panel_->visible());
       if (exclude_panel_->focus()) {
         unfocusOthers(exclude_panel_);
-      }
-      else {
+      } else {
         focusNext(exclude_panel_);
       }
       refreshLayout();
-    }
-    else if (ch == ctrl('f')) {
+    } else if (ch == ctrl('f')) {
       filter_panel_->hide(filter_panel_->visible());
       if (filter_panel_->focus()) {
         unfocusOthers(filter_panel_);
-      }
-      else {
+      } else {
         focusNext(exclude_panel_);
       }
       refreshLayout();
-    }
-    else if (ch == ctrl('h')) {
+    } else if (ch == ctrl('h')) {
       help_panel_->hide(help_panel_->visible());
-    }
-    else if (ch == ctrl('n')) {
+    } else if (ch == ctrl('n')) {
+      details_panel_->hide(true);
       node_panel_->hide(node_panel_->visible());
       if (node_panel_->focus()) {
         unfocusOthers(node_panel_);
-      }
-      else {
+      } else {
         focusNext(node_panel_);
       }
-    }
-    else if (ch == KEY_F(1)) {
+    } else if (ch == ctrl('d')) {
+      node_panel_->hide(true);
+      details_panel_->hide(details_panel_->visible());
+      if (details_panel_->focus()) {
+        unfocusOthers(details_panel_);
+      } else {
+        focusNext(details_panel_);
+      }
+    } else if (ch == KEY_F(1)) {
       level_panel_->toggleDebug();
-    }
-    else if (ch == KEY_F(2)) {
+    } else if (ch == KEY_F(2)) {
       level_panel_->toggleInfo();
-    }
-    else if (ch == KEY_F(3)) {
+    } else if (ch == KEY_F(3)) {
       level_panel_->toggleWarn();
-    }
-    else if (ch == KEY_F(4)) {
+    } else if (ch == KEY_F(4)) {
       level_panel_->toggleError();
-    }
-    else if (ch == KEY_F(5)) {
+    } else if (ch == KEY_F(5)) {
       level_panel_->toggleFatal();
-    }
-    else if (ch == KEY_F(7)) {
+    } else if (ch == KEY_F(7)) {
       level_panel_->toggleAllNodes();
     }
   }
@@ -288,6 +278,10 @@ void LogView::update() {
     node_panel_->refresh();
   }
 
+  if (details_panel_->visible()) {
+    details_panel_->refresh();
+  }
+
   status_panel_->refresh();
 
   if (help_panel_->visible()) {
@@ -295,7 +289,7 @@ void LogView::update() {
   }
 
   curs_set(0);
-  for (auto& panel: panels_) {
+  for (auto& panel : panels_) {
     panel->setCursor();
   }
 
@@ -305,13 +299,24 @@ void LogView::update() {
 
 void LogView::refreshLayout() {
   status_panel_->resize(1, COLS, 0, 0);
-  log_panel_->resize(LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()), COLS, 1, 0);
-  level_panel_->resize(1, COLS, LINES - (1 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()), 0);
-  search_panel_->resize(1, COLS, LINES - (1 + exclude_panel_->visible() + filter_panel_->visible()), 0);
+  log_panel_->resize(
+    LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
+    COLS, 1, 0);
+  level_panel_->resize(
+    1, COLS,
+    LINES - (1 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
+    0);
+  search_panel_->resize(
+    1, COLS, LINES - (1 + exclude_panel_->visible() + filter_panel_->visible()), 0);
   filter_panel_->resize(1, COLS, LINES - (1 + exclude_panel_->visible()), 0);
   exclude_panel_->resize(1, COLS, LINES - 1, 0);
-  node_panel_->resize(LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()), COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
-  help_panel_->resize(21, COLS - 8, 2, 4);
+  node_panel_->resize(
+    LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
+    COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
+  details_panel_->resize(
+    LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
+    COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
+  help_panel_->resize(22, COLS - 8, 2, 4);
 }
 
 void LogView::tab() {
@@ -336,7 +341,7 @@ void LogView::tab() {
 }
 
 void LogView::unfocusOthers(const PanelInterfacePtr& focused) {
-  for (auto& panel: panels_) {
+  for (auto& panel : panels_) {
     if (panel != focused) {
       panel->setFocus(false);
     }

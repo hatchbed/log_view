@@ -1,40 +1,42 @@
-/**
- * Copyright 2020 Hatchbed L.L.C.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holder nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2020 Hatchbed L.L.C.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the copyright holder nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <log_view/panels/help_panel.h>
 
 #include <cmath>
+
 #include <log_view/utils.h>
 
 namespace log_view {
 
-// TODO handle case where terminal is too small
+// TODO(malban): handle case where terminal is too small
 
-// TODO support show/hide timestamps
+// TODO(malban): support show/hide timestamps
 
 HelpPanel::HelpPanel(int height, int width, int y, int x) :
   PanelInterface(height, width, y, x),
@@ -48,20 +50,21 @@ HelpPanel::HelpPanel(int height, int width, int y, int x) :
     {9, "F5", "Show/hide fatal level"},
     {10, "F7", "Enable/disable node filter"},
     {11, "CTRL-a", "Select all"},
-    {12, "CTRL-i", "Invert node selection"},
-    {13, "CTRL-n", "Show/hide node selection"},
-    {14, "CTRL-s", "Search for matching string"},
-    {15, "CTRL-x", "Clear search"},
-    {16, "Backspace", "Prev match"},
-    {17, "Enter", "Next match"},
-    {18, "CTRL-e", "Enable/disable text exclude filter"},
-    {19, "CTRL-f", "Enable/disable text include filter"}})
+    {12, "CTRL-d", "Show/hide message details"},
+    {13, "CTRL-i", "Invert node selection"},
+    {14, "CTRL-n", "Show/hide node selection"},
+    {15, "CTRL-s", "Search for matching string"},
+    {16, "CTRL-x", "Clear search"},
+    {17, "Backspace", "Prev match"},
+    {18, "Enter", "Next match"},
+    {19, "CTRL-e", "Enable/disable text exclude filter"},
+    {20, "CTRL-f", "Enable/disable text include filter"}})
 {
-  for (const auto& key: keys_) {
+  for (const auto& key : keys_) {
     longest_key_ = std::max(longest_key_, key.key.length());
   }
 
-  for (const auto& key: keys_) {
+  for (const auto& key : keys_) {
     longest_line_ = std::max(longest_line_, longest_key_ + 11 + key.description.length());
   }
 }
@@ -69,7 +72,7 @@ HelpPanel::HelpPanel(int height, int width, int y, int x) :
 void HelpPanel::refresh() {
   box(window_, 0, 0);
   mvwprintw(window_,  0, width_ / 2 - 3, " help ");
-  for (const auto& key: keys_) {
+  for (const auto& key : keys_) {
     printKeybinding(key);
   }
 }
@@ -90,8 +93,7 @@ bool HelpPanel::handleKey(int key) {
 
   if (key == ctrl('h')) {
       hide(visible());
-  }
-  else if (key == KEY_RESIZE || key == ctrl('q') || key == ctrl('c')) {
+  } else if (key == KEY_RESIZE || key == ctrl('q') || key == ctrl('c')) {
     return false;
   }
 
@@ -116,4 +118,4 @@ void HelpPanel::printKeybinding(const HelpText& help_text) {
     wattroff(window_, COLOR_PAIR(CP_GREY));
 }
 
-} // namespace log_view
+}  // namespace log_view
