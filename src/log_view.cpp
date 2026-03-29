@@ -93,7 +93,11 @@ void LogView::init() {
   node_panel_->hide(true);
   panels_.push_back(node_panel_);
 
-  help_panel_ = std::make_shared<HelpPanel>(21, COLS - 8, 2, 4);
+  details_panel_ = std::make_shared<DetailsPanel>(LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
+  details_panel_->hide(true);
+  panels_.push_back(details_panel_);
+
+  help_panel_ = std::make_shared<HelpPanel>(22, COLS - 8, 2, 4);
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
 
@@ -254,12 +258,23 @@ void LogView::update() {
       help_panel_->hide(help_panel_->visible());
     }
     else if (ch == ctrl('n')) {
+      details_panel_->hide(true);
       node_panel_->hide(node_panel_->visible());
       if (node_panel_->focus()) {
         unfocusOthers(node_panel_);
       }
       else {
         focusNext(node_panel_);
+      }
+    }
+    else if (ch == ctrl('d')) {
+      node_panel_->hide(true);
+      details_panel_->hide(details_panel_->visible());
+      if (details_panel_->focus()) {
+        unfocusOthers(details_panel_);
+      }
+      else {
+        focusNext(details_panel_);
       }
     }
     else if (ch == KEY_F(1)) {
@@ -292,6 +307,10 @@ void LogView::update() {
     node_panel_->refresh();
   }
 
+  if (details_panel_->visible()) {
+    details_panel_->refresh();
+  }
+
   status_panel_->refresh();
 
   if (help_panel_->visible()) {
@@ -315,7 +334,8 @@ void LogView::refreshLayout() {
   filter_panel_->resize(1, COLS, LINES - (1 + exclude_panel_->visible()), 0);
   exclude_panel_->resize(1, COLS, LINES - 1, 0);
   node_panel_->resize(LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()), COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
-  help_panel_->resize(21, COLS - 8, 2, 4);
+  details_panel_->resize(LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()), COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
+  help_panel_->resize(22, COLS - 8, 2, 4);
 }
 
 void LogView::tab() {

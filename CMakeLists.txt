@@ -31,6 +31,7 @@ add_library(${PROJECT_NAME}
   src/log_view.cpp
   src/panel_interface.cpp
   src/utils.cpp
+  src/panels/details_panel.cpp
   src/panels/exclude_panel.cpp
   src/panels/filter_panel.cpp
   src/panels/help_panel.cpp

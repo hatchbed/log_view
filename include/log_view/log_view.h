@@ -31,6 +31,7 @@
 #include <log_view/log_filter.h>
 #include <log_view/log_store.h>
 #include <log_view/panel_interface.h>
+#include <log_view/panels/details_panel.h>
 #include <log_view/panels/exclude_panel.h>
 #include <log_view/panels/filter_panel.h>
 #include <log_view/panels/help_panel.h>
@@ -80,6 +81,7 @@ private:
   bool log_scroll_ = false;
 
   std::vector<PanelInterfacePtr> panels_;
+  DetailsPanelPtr details_panel_;
   StatusPanelPtr status_panel_;
   LevelPanelPtr level_panel_;
   SearchPanelPtr search_panel_;

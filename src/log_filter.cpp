@@ -230,8 +230,21 @@ void LogFilter::setCursor(int64_t index) {
   cursor_ = index;
 }
 
-size_t LogFilter::getCursor() {
+int64_t LogFilter::getCursor() const {
   return cursor_;
+}
+
+const LogEntry& LogFilter::getEntry(int64_t index) const {
+  if (index < 0 || index >= log_indices_.size()) {
+    return dummy_entry_;
+  }
+
+  auto& entry = log_indices_[index];
+  if (entry.index >= logs_->logs().size()) {
+    return dummy_entry_;
+  }
+
+  return logs_->logs()[entry.index];
 }
 
 void LogFilter::clearSelect() {
@@ -244,7 +257,7 @@ void LogFilter::setSelectStart(int64_t index) {
   select_end_ = index;
 }
 
-int64_t LogFilter::getSelectStart() {
+int64_t LogFilter::getSelectStart() const {
   return select_start_;
 }
 
@@ -252,7 +265,7 @@ void LogFilter::setSelectEnd(int64_t index) {
   select_end_ = index;
 }
 
-int64_t LogFilter::getSelectEnd() {
+int64_t LogFilter::getSelectEnd() const {
   return select_end_;
 }
 
