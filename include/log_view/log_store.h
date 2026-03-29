@@ -29,6 +29,7 @@
 #pragma once
 
 #include <deque>
+#include <memory>
 #include <mutex>
 
 #include <log_view/datatypes.h>

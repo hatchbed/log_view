@@ -31,6 +31,8 @@
 #include <curses.h>
 #include <panel.h>
 
+#include <vector>
+
 #include <rclcpp/rclcpp.hpp>
 
 #include <log_view/log_filter.h>

@@ -28,6 +28,9 @@
 
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include <log_view/utils.h>
 #include <rclcpp/rclcpp.hpp>
 #include <rcl_interfaces/msg/log.hpp>

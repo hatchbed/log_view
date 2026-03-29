@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <log_view/panel_interface.h>
 #include <log_view/log_store.h>
 #include <rclcpp/rclcpp.hpp>

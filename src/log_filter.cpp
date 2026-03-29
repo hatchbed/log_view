@@ -157,7 +157,7 @@ void LogFilter::reset() {
 void LogFilter::update() {
   const auto& logs = logs_->logs();
 
-  // TODO process for 50 ms to avoid hogging the screen if there is a backlog
+  // TODO(malban): process for 50 ms to avoid hogging the screen if there is a backlog
 
   for (;latest_log_index_ < logs.size(); latest_log_index_++) {
     if (accepted(logs[latest_log_index_], true)) {
@@ -171,7 +171,7 @@ void LogFilter::update() {
 void LogFilter::idleProcess() {
   const auto& logs = logs_->logs();
 
-  // TODO process for 50 ms instead of fixed 1000
+  // TODO(malban): process for 50 ms instead of fixed 1000
 
   for (size_t i = 0; earliest_log_index_ != 0 && i < 1000; earliest_log_index_--, i++)
   {

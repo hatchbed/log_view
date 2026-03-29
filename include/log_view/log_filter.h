@@ -32,6 +32,9 @@
 #include <cstdint>
 #include <deque>
 #include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include <log_view/datatypes.h>
 #include <log_view/log_store.h>

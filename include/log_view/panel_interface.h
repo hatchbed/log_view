@@ -85,7 +85,7 @@ class PanelInterface {
   virtual void follow(bool enable);
   virtual void pageUp();
   virtual void pageDown();
-  virtual void move(int step);
+  virtual void move(int step);  // NOLINT(build/include_what_you_use)
   virtual void moveTo(size_t index);
   virtual void shift(int cols);
   virtual void select() {}

@@ -68,7 +68,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
   find_package(ament_cmake_cpplint REQUIRED)
   ament_cpplint(
-    FILTERS "-build/include_order,-build/include_what_you_use,-readability/todo"
+    FILTERS "-build/include_order"
     MAX_LINE_LENGTH 100)
 endif()
 

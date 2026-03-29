@@ -28,6 +28,9 @@
 
 #pragma once
 
+#include <memory>
+#include <string>
+
 #include <log_view/log_filter.h>
 #include <log_view/panel_interface.h>
 
