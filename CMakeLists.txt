@@ -24,6 +24,7 @@ add_library(${PROJECT_NAME}
   src/log_view.cpp
   src/panel_interface.cpp
   src/utils.cpp
+  src/panels/details_panel.cpp
   src/panels/exclude_panel.cpp
   src/panels/filter_panel.cpp
   src/panels/help_panel.cpp
@@ -55,4 +56,15 @@ install(TARGETS ${PROJECT_NAME} log_viewer
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
 ament_export_dependencies(rclcpp rcl_interfaces)
+
+install(FILES
+  CONTRIBUTING.md
+  DESTINATION share/${PROJECT_NAME}
+)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
 ament_package()

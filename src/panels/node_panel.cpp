@@ -30,7 +30,7 @@
 namespace log_view {
 
 void NodePanel::refresh() {
-  size_t cursor = getCursor();
+  int64_t cursor = getCursor();
 
   max_length_ = 0;
   if (!cleared_) {

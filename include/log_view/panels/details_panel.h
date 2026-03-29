@@ -1,5 +1,5 @@
 /**
- * Copyright 2020 Hatchbed L.L.C.
+ * Copyright 2026 Hatchbed L.L.C.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,72 +25,29 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef LOG_VIEW_LOG_VIEW_H_
-#define LOG_VIEW_LOG_VIEW_H_
+#ifndef LOG_VIEW_DETAILS_PANEL_H_
+#define LOG_VIEW_DETAILS_PANEL_H_
 
 #include <log_view/log_filter.h>
-#include <log_view/log_store.h>
 #include <log_view/panel_interface.h>
-#include <log_view/panels/details_panel.h>
-#include <log_view/panels/exclude_panel.h>
-#include <log_view/panels/filter_panel.h>
-#include <log_view/panels/help_panel.h>
-#include <log_view/panels/level_panel.h>
-#include <log_view/panels/log_panel.h>
-#include <log_view/panels/node_panel.h>
-#include <log_view/panels/search_panel.h>
-#include <log_view/panels/status_panel.h>
-#include <curses.h>
-#include <panel.h>
-#include <rclcpp/rclcpp.hpp>
 
 namespace log_view {
 
-class LogView {
-public:
-  explicit LogView(LogStorePtr& logs);
-  ~LogView();
+class DetailsPanel : public PanelInterface {
+  public:
+  DetailsPanel(int height, int width, int y, int x, const LogFilter& filter) : PanelInterface(height, width, y, x), filter_(filter) {}
+  virtual ~DetailsPanel() {}
+  virtual void refresh();
 
-  void init();
-  void close();
+  protected:
+  virtual size_t getContentSize() const { return 6; }
+  virtual int getContentHeight() const { return height_ - 2; }
+  virtual int getContentWidth() const;
 
-  bool exited() const;
-
-  void setRosTime(const rclcpp::Time& time);
-  void setSystemTime(const rclcpp::Time& time);
-
-  void update();
-
-private:
-  void refreshLayout();
-
-  size_t viewSize() const;
-
-  void tab();
-  void focusNext(const PanelInterfacePtr& panel);
-  void unfocusOthers(const PanelInterfacePtr& focused);
-
-  LogStorePtr logs_;
-  LogFilter log_filter_;
-
-  bool exited_ = false;
-  bool mouse_down_ = false;
-
-  bool node_select_ = true;
-  bool log_scroll_ = false;
-
-  std::vector<PanelInterfacePtr> panels_;
-  DetailsPanelPtr details_panel_;
-  StatusPanelPtr status_panel_;
-  LevelPanelPtr level_panel_;
-  SearchPanelPtr search_panel_;
-  FilterPanelPtr filter_panel_;
-  ExcludePanelPtr exclude_panel_;
-  LogPanelPtr log_panel_;
-  NodePanelPtr node_panel_;
-  HelpPanelPtr help_panel_;
+  const LogFilter& filter_;
 };
+typedef std::shared_ptr<DetailsPanel> DetailsPanelPtr;
 
 }  // namespace log_view
 
-#endif  // LOG_VIEW_LOG_VIEW_H_
+#endif  // LOG_VIEW_DETAILS_PANEL_H_

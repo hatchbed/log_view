@@ -48,14 +48,15 @@ HelpPanel::HelpPanel(int height, int width, int y, int x) :
     {9, "F5", "Show/hide fatal level"},
     {10, "F7", "Enable/disable node filter"},
     {11, "CTRL-a", "Select all"},
-    {12, "CTRL-i", "Invert node selection"},
-    {13, "CTRL-n", "Show/hide node selection"},
-    {14, "CTRL-s", "Search for matching string"},
-    {15, "CTRL-x", "Clear search"},
-    {16, "Backspace", "Prev match"},
-    {17, "Enter", "Next match"},
-    {18, "CTRL-e", "Enable/disable text exclude filter"},
-    {19, "CTRL-f", "Enable/disable text include filter"}})
+    {12, "CTRL-d", "Show/hide message details"},
+    {13, "CTRL-i", "Invert node selection"},
+    {14, "CTRL-n", "Show/hide node selection"},
+    {15, "CTRL-s", "Search for matching string"},
+    {16, "CTRL-x", "Clear search"},
+    {17, "Backspace", "Prev match"},
+    {18, "Enter", "Next match"},
+    {19, "CTRL-e", "Enable/disable text exclude filter"},
+    {20, "CTRL-f", "Enable/disable text include filter"}})
 {
   for (const auto& key: keys_) {
     longest_key_ = std::max(longest_key_, key.key.length());

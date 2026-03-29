@@ -69,15 +69,17 @@ public:
   void idleProcess();
 
   void setCursor(int64_t index);
-  size_t getCursor();
+  int64_t getCursor() const;
 
   void clearSelect();
 
   void setSelectStart(int64_t index);
-  int64_t getSelectStart();
+  int64_t getSelectStart() const;
 
   void setSelectEnd(int64_t index);
-  int64_t getSelectEnd();
+  int64_t getSelectEnd() const;
+
+  const LogEntry& getEntry(int64_t index) const;
 
   void search(const std::string& pattern);
   void nextMatch();
@@ -88,6 +90,7 @@ public:
   const std::deque<LogLine>& indices() const { return log_indices_; }
   const std::map<std::string, NodeData>& nodes() const { return nodes_; }
 
+
   int64_t search_cursor_ = -1;
   int64_t search_cursor_fwd_ = -1;
   int64_t search_cursor_rev_ = -1;
@@ -96,6 +99,7 @@ private:
   bool accepted(const LogEntry& entry, bool new_entry = false);
 
   LogStorePtr logs_;
+  LogEntry dummy_entry_;
 
   std::deque<LogLine> log_indices_;
   size_t latest_log_index_ = 0;
