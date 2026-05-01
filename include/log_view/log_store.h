@@ -45,6 +45,7 @@ public:
   size_t size() const;
 
   void addEntry(const rcl_interfaces::msg::Log::SharedPtr msg);
+  void clear();
 
 private:
   std::deque<LogEntry> logs_;

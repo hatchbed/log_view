@@ -49,4 +49,10 @@ void LogStore::addEntry(const rcl_interfaces::msg::Log::SharedPtr msg) {
   new_logs_.push_back(LogEntry(*msg));
 }
 
+void LogStore::clear() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  logs_.clear();
+  new_logs_.clear();
+}
+
 }  // namespace log_view
