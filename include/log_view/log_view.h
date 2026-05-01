@@ -73,15 +73,21 @@ private:
   void tab();
   void focusNext(const PanelInterfacePtr& panel);
   void unfocusOthers(const PanelInterfacePtr& focused);
+  void openConfirmClear();
+  void closeConfirmClear();
 
   LogStorePtr logs_;
   LogFilter log_filter_;
 
   bool exited_ = false;
   bool mouse_down_ = false;
+  bool confirm_clear_ = false;
 
   bool node_select_ = true;
   bool log_scroll_ = false;
+
+  WINDOW* confirm_win_ = nullptr;
+  PANEL* confirm_panel_ = nullptr;
 
   std::vector<PanelInterfacePtr> panels_;
   DetailsPanelPtr details_panel_;

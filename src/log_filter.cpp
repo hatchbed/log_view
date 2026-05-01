@@ -143,6 +143,17 @@ void LogFilter::invertNodes() {
 }
 
 
+void LogFilter::clearLogs() {
+  logs_->clear();
+  nodes_.clear();
+  clearSearch();
+  log_indices_.clear();
+  cursor_ = -1;
+  clearSelect();
+  latest_log_index_ = 0;
+  earliest_log_index_ = 0;
+}
+
 void LogFilter::reset() {
   log_indices_.clear();
   cursor_ = -1;

@@ -67,6 +67,7 @@ public:
   bool getFatalLevel() const { return fatal_level_; }
   bool getEnableNodeFilter() const { return filter_nodes_; }
 
+  void clearLogs();
   void reset();
   void update();
   void idleProcess();

@@ -97,7 +97,7 @@ void LogView::init() {
   details_panel_->hide(true);
   panels_.push_back(details_panel_);
 
-  help_panel_ = std::make_shared<HelpPanel>(22, COLS - 8, 2, 4);
+  help_panel_ = std::make_shared<HelpPanel>(23, COLS - 8, 2, 4);
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
 
@@ -133,7 +133,21 @@ void LogView::update() {
   int ch = getch();
 
   bool key_used = false;
-  if (ch == KEY_MOUSE) {
+
+  if (confirm_clear_) {
+    if (ch != ERR && ch != KEY_MOUSE) {
+      if (ch == 'y' || ch == 'Y') {
+        log_filter_.clearLogs();
+        for (auto& p : panels_) {
+          p->forceRefresh();
+        }
+      }
+      closeConfirmClear();
+    }
+    key_used = true;
+  }
+
+  if (!key_used && ch == KEY_MOUSE) {
     MEVENT event;
     if (getmouse(&event) == OK) {
       if (event.bstate & BUTTON4_PRESSED) {
@@ -265,6 +279,8 @@ void LogView::update() {
       level_panel_->toggleFatal();
     } else if (ch == KEY_F(7)) {
       level_panel_->toggleAllNodes();
+    } else if (ch == ctrl('r')) {
+      openConfirmClear();
     }
   }
 
@@ -286,6 +302,10 @@ void LogView::update() {
 
   if (help_panel_->visible()) {
     help_panel_->toTop();
+  }
+
+  if (confirm_clear_) {
+    top_panel(confirm_panel_);
   }
 
   curs_set(0);
@@ -316,7 +336,7 @@ void LogView::refreshLayout() {
   details_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
     COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
-  help_panel_->resize(22, COLS - 8, 2, 4);
+  help_panel_->resize(23, COLS - 8, 2, 4);
 }
 
 void LogView::tab() {
@@ -367,6 +387,29 @@ void LogView::focusNext(const PanelInterfacePtr& panel) {
       break;
     }
   }
+}
+
+void LogView::openConfirmClear() {
+  static const std::string msg = "Clear all messages? (y/N)";
+  int width = static_cast<int>(msg.length()) + 4;
+  int height = 3;
+  int y = LINES / 2 - 1;
+  int x = COLS / 2 - width / 2;
+
+  confirm_win_ = newwin(height, width, y, x);
+  confirm_panel_ = new_panel(confirm_win_);
+  box(confirm_win_, 0, 0);
+  mvwprintw(confirm_win_, 1, 2, "%s", msg.c_str());
+  confirm_clear_ = true;
+}
+
+void LogView::closeConfirmClear() {
+  del_panel(confirm_panel_);
+  delwin(confirm_win_);
+  confirm_panel_ = nullptr;
+  confirm_win_ = nullptr;
+  confirm_clear_ = false;
+  refreshLayout();
 }
 
 }  // namespace log_view
