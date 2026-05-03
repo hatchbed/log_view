@@ -46,6 +46,8 @@ LogView::~LogView() {
 }
 
 void LogView::init() {
+  prefs_.load();
+
   setlocale(LC_ALL, "");
   initscr();
   use_default_colors();
@@ -66,7 +68,7 @@ void LogView::init() {
 
   refresh();
 
-  log_panel_ = std::make_shared<LogPanel>(LINES - 2, COLS, 1, 0, logs_, log_filter_);
+  log_panel_ = std::make_shared<LogPanel>(LINES - 2, COLS, 1, 0, logs_, log_filter_, prefs_);
   panels_.push_back(log_panel_);
 
   status_panel_ = std::make_shared<StatusPanel>(1, COLS, 0, 0, logs_);
@@ -97,9 +99,36 @@ void LogView::init() {
   details_panel_->hide(true);
   panels_.push_back(details_panel_);
 
-  help_panel_ = std::make_shared<HelpPanel>(23, COLS - 8, 2, 4);
+  help_panel_ = std::make_shared<HelpPanel>(24, COLS - 8, 2, 4);
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
+
+  prefs_panel_ = std::make_shared<PrefsPanel>(11, 42, LINES / 2 - 5, COLS / 2 - 21, prefs_);
+  prefs_panel_->hide(true);
+  prefs_panel_->setOnSave([this]() {
+    log_panel_->forceRefresh();
+  });
+  panels_.push_back(prefs_panel_);
+
+  if (prefs_.persist_filters) {
+    log_filter_.setDebugLevel(prefs_.filters.debug);
+    log_filter_.setInfoLevel(prefs_.filters.info);
+    log_filter_.setWarnLevel(prefs_.filters.warn);
+    log_filter_.setErrorLevel(prefs_.filters.error);
+    log_filter_.setFatalLevel(prefs_.filters.fatal);
+    log_filter_.setEnableNodeFilter(prefs_.filters.node_filter_enabled);
+    log_filter_.setPendingNodeSelected(prefs_.filters.node_whitelist);
+    if (!prefs_.filters.filter_pattern.empty()) {
+      filter_panel_->setInputText(prefs_.filters.filter_pattern);
+      filter_panel_->hide(false);
+      filter_panel_->setFocus(false);
+    }
+    if (!prefs_.filters.exclude_pattern.empty()) {
+      exclude_panel_->setInputText(prefs_.filters.exclude_pattern);
+      exclude_panel_->hide(false);
+      exclude_panel_->setFocus(false);
+    }
+  }
 
   refreshLayout();
 
@@ -110,6 +139,23 @@ void LogView::init() {
 }
 
 void LogView::close() {
+  if (prefs_.persist_filters) {
+    prefs_.filters.debug  = log_filter_.getDebugLevel();
+    prefs_.filters.info   = log_filter_.getInfoLevel();
+    prefs_.filters.warn   = log_filter_.getWarnLevel();
+    prefs_.filters.error  = log_filter_.getErrorLevel();
+    prefs_.filters.fatal  = log_filter_.getFatalLevel();
+    prefs_.filters.node_filter_enabled = log_filter_.getEnableNodeFilter();
+    prefs_.filters.filter_pattern  = log_filter_.getFilterString();
+    prefs_.filters.exclude_pattern = log_filter_.getExcludeString();
+    prefs_.filters.node_whitelist.clear();
+    for (const auto& [name, data] : log_filter_.nodes()) {
+      if (data.selected) {
+        prefs_.filters.node_whitelist.insert(name);
+      }
+    }
+    prefs_.save();
+  }
   printf("\033[?1003l\n");  // Disable mouse movement events
   endwin();
 }
@@ -147,12 +193,12 @@ void LogView::update() {
     key_used = true;
   }
 
-  if (!key_used && ch == KEY_MOUSE) {
+  while (!key_used && ch == KEY_MOUSE) {
     MEVENT event;
     if (getmouse(&event) == OK) {
       if (event.bstate & BUTTON4_PRESSED) {
         ch = KEY_UP;
-        key_used = false;
+        break;
       } else {
         key_used = true;
 
@@ -172,7 +218,10 @@ void LogView::update() {
         }
       }
     }
+    timeout(0);
+    ch = getch();
   }
+  timeout(50);
 
   if (!key_used) {
     std::for_each(panels_.rbegin(), panels_.rend(), [&](PanelInterfacePtr& panel) {
@@ -251,6 +300,8 @@ void LogView::update() {
       refreshLayout();
     } else if (ch == ctrl('h')) {
       help_panel_->hide(help_panel_->visible());
+    } else if (ch == ctrl('k')) {
+      prefs_panel_->hide(prefs_panel_->visible());
     } else if (ch == ctrl('n')) {
       details_panel_->hide(true);
       node_panel_->hide(node_panel_->visible());
@@ -304,6 +355,10 @@ void LogView::update() {
     help_panel_->toTop();
   }
 
+  if (prefs_panel_->visible()) {
+    prefs_panel_->toTop();
+  }
+
   if (confirm_clear_) {
     top_panel(confirm_panel_);
   }
@@ -336,7 +391,8 @@ void LogView::refreshLayout() {
   details_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
     COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
-  help_panel_->resize(23, COLS - 8, 2, 4);
+  help_panel_->resize(24, COLS - 8, 2, 4);
+  prefs_panel_->resize(11, 42, std::max(0, LINES / 2 - 5), std::max(0, COLS / 2 - 21));
 }
 
 void LogView::tab() {

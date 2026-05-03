@@ -28,9 +28,16 @@
 
 #include <log_view/panels/log_panel.h>
 
+#include <ctime>
+
 #include <log_view/utils.h>
 
 namespace log_view {
+
+void LogPanel::forceRefresh() {
+  first_stamp_ns_ = -1;
+  PanelInterface::forceRefresh();
+}
 
 void LogPanel::refresh() {
   int64_t cursor = getCursor();
@@ -193,7 +200,32 @@ int LogPanel::getContentWidth() const {
 }
 
 std::string LogPanel::getPrefix(const LogEntry& entry, size_t line) const {
-  std::string text = toString(entry.stamp.seconds(), 4) + " [";
+  std::string timestamp;
+  switch (prefs_.timestamp_format) {
+    case Preferences::TimestampFormat::ELAPSED: {
+      if (first_stamp_ns_ < 0) {
+        first_stamp_ns_ = entry.stamp.nanoseconds();
+      }
+      double elapsed = static_cast<double>(entry.stamp.nanoseconds() - first_stamp_ns_) * 1e-9;
+      timestamp = toString(elapsed, 4);
+      break;
+    }
+    case Preferences::TimestampFormat::TIME_OF_DAY: {
+      int64_t ns = entry.stamp.nanoseconds();
+      time_t secs = static_cast<time_t>(ns / 1000000000LL);
+      int millis = static_cast<int>((ns % 1000000000LL) / 1000000LL);
+      struct tm t;
+      localtime_r(&secs, &t);
+      char buf[16];
+      snprintf(buf, sizeof(buf), "%02d:%02d:%02d.%03d", t.tm_hour, t.tm_min, t.tm_sec, millis);
+      timestamp = buf;
+      break;
+    }
+    default:
+      timestamp = toString(entry.stamp.seconds(), 4);
+      break;
+  }
+  std::string text = timestamp + " [";
   if (entry.level == rcl_interfaces::msg::Log::DEBUG) {
     text += "DEBUG";
   } else if (entry.level == rcl_interfaces::msg::Log::INFO) {
