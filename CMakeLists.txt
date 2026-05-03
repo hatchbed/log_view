@@ -4,6 +4,7 @@ project(log_view)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcl_interfaces REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 set(CURSES_NEED_NCURSES TRUE)
 find_package(Curses REQUIRED)
@@ -23,6 +24,7 @@ add_library(${PROJECT_NAME}
   src/log_store.cpp
   src/log_view.cpp
   src/panel_interface.cpp
+  src/preferences.cpp
   src/utils.cpp
   src/panels/details_panel.cpp
   src/panels/exclude_panel.cpp
@@ -31,6 +33,7 @@ add_library(${PROJECT_NAME}
   src/panels/level_panel.cpp
   src/panels/log_panel.cpp
   src/panels/node_panel.cpp
+  src/panels/prefs_panel.cpp
   src/panels/search_panel.cpp
   src/panels/status_panel.cpp
 )
@@ -38,6 +41,7 @@ target_link_libraries(${PROJECT_NAME}
   ${CURSES_LIBRARIES}
   ${CURSES_PANEL_LIBRARY}
   rclcpp::rclcpp
+  yaml-cpp
 )
 
 add_executable(log_viewer src/main.cpp)

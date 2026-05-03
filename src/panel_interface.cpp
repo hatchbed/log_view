@@ -43,6 +43,9 @@ PanelInterface::PanelInterface(int height, int width, int y, int x) :
 }
 
 PanelInterface::~PanelInterface() {
+  if (panel_) {
+    del_panel(panel_);
+  }
   delwin(window_);
 }
 

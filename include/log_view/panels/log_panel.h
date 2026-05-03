@@ -34,15 +34,18 @@
 #include <log_view/log_filter.h>
 #include <log_view/log_store.h>
 #include <log_view/panel_interface.h>
+#include <log_view/preferences.h>
 
 namespace log_view {
 
 class LogPanel : public PanelInterface {
   public:
-  LogPanel(int height, int width, int y, int x, LogStorePtr& logs, LogFilter& filter)
-  : PanelInterface(height, width, y, x), logs_(logs), filter_(filter) {}
+  LogPanel(int height, int width, int y, int x, LogStorePtr& logs, LogFilter& filter,
+           const Preferences& prefs)
+  : PanelInterface(height, width, y, x), logs_(logs), filter_(filter), prefs_(prefs) {}
   virtual ~LogPanel() {}
   virtual void refresh();
+  virtual void forceRefresh();
   virtual void selectAll();
   virtual void startSelect(int row);
   virtual void endSelect(int row);
@@ -62,9 +65,11 @@ class LogPanel : public PanelInterface {
 
   LogStorePtr logs_;
   LogFilter& filter_;
+  const Preferences& prefs_;
 
   bool mouse_down_ = false;
   bool filled_ = false;
+  mutable int64_t first_stamp_ns_ = -1;
 };
 typedef std::shared_ptr<LogPanel> LogPanelPtr;
 

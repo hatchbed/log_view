@@ -56,7 +56,7 @@ void LevelPanel::refresh() {
   if (!filter_.getFatalLevel()) {
     mvwprintw(window_, 0, 26, " fatal ");
   }
-  if (filter_.getEnableNodeFilter()) {
+  if (filter_.getNodeFilterActive()) {
     mvwprintw(window_, 0, 37, " all nodes ");
   }
   wattroff(window_, COLOR_PAIR(CP_DEFAULT_GREY));

@@ -28,46 +28,36 @@
 
 #pragma once
 
+#include <set>
 #include <string>
-#include <vector>
-
-#include <log_view/utils.h>
-#include <rclcpp/rclcpp.hpp>
-#include <rcl_interfaces/msg/log.hpp>
 
 namespace log_view {
 
-struct LogLine {
-  size_t index;
-  size_t line;
-};
+struct Preferences {
+  enum class TimestampFormat {
+    SECONDS,      // raw ROS seconds since epoch (e.g. 1234567.8901)
+    ELAPSED,      // seconds since first message
+    TIME_OF_DAY,  // local wall clock HH:MM:SS.mmm
+  };
 
-struct LogEntry
-{
-  LogEntry() = default;
-  LogEntry(const LogEntry& entry) = default;
-  explicit LogEntry(const rcl_interfaces::msg::Log& log) :
-    stamp(log.stamp),
-    level(log.level),
-    node(log.name),
-    file(log.file),
-    function(log.function),
-    line(log.line),
-    text(split(log.msg, '\n'))
-  {}
+  TimestampFormat timestamp_format = TimestampFormat::SECONDS;
+  bool persist_filters = false;
 
-  rclcpp::Time stamp;
-  uint8_t level;
-  std::string node;
-  std::string file;
-  std::string function;
-  uint32_t line;
-  std::vector<std::string> text;
-};
+  struct FilterSettings {
+    bool debug = true;
+    bool info = true;
+    bool warn = true;
+    bool error = true;
+    bool fatal = true;
+    bool node_filter_enabled = false;
+    std::string filter_pattern;
+    std::string exclude_pattern;
+    std::set<std::string> node_whitelist;  // nodes to show when node filter is enabled
+  } filters;
 
-struct NodeData {
-  bool selected = false;  // true = in whitelist (show when node filter is active)
-  size_t count = 0;
+  static std::string defaultPath();
+  bool load();
+  void save() const;
 };
 
 }  // namespace log_view
