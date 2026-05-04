@@ -382,4 +382,12 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
 }
 
 
+size_t LogFilter::filteredCount() const {
+  size_t count = 0;
+  for (const auto& ll : log_indices_) {
+    if (ll.line == 0) count++;
+  }
+  return count;
+}
+
 }  // namespace log_view

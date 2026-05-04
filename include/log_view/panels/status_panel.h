@@ -30,16 +30,17 @@
 
 #include <memory>
 
-#include <log_view/panel_interface.h>
+#include <log_view/log_filter.h>
 #include <log_view/log_store.h>
+#include <log_view/panel_interface.h>
 #include <rclcpp/rclcpp.hpp>
 
 namespace log_view {
 
 class StatusPanel : public PanelInterface {
   public:
-  StatusPanel(int height, int width, int y, int x, LogStorePtr& logs)
-  : PanelInterface(height, width, y, x), logs_(logs) {}
+  StatusPanel(int height, int width, int y, int x, LogStorePtr& logs, LogFilter& filter)
+  : PanelInterface(height, width, y, x), logs_(logs), filter_(filter) {}
   virtual ~StatusPanel() {}
   virtual void refresh();
 
@@ -50,6 +51,7 @@ class StatusPanel : public PanelInterface {
   rclcpp::Time ros_time_ = rclcpp::Time(0);
   rclcpp::Time system_time_ = rclcpp::Time(0);
   LogStorePtr logs_;
+  LogFilter& filter_;
 };
 typedef std::shared_ptr<StatusPanel> StatusPanelPtr;
 
