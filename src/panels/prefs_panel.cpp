@@ -149,8 +149,11 @@ void PrefsPanel::refresh() {
   mvwprintw(window_, 13, 3, "Log Rotate Size");
   if (!size_enabled) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
 
-  if (rs_focused) { wattron(window_, A_REVERSE); }
-  else if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (rs_focused) {
+    wattron(window_, A_REVERSE);
+  } else if (!size_enabled) {
+    wattron(window_, COLOR_PAIR(CP_GREY));
+  }
   mvwprintw(window_, 14, 5, "%-14s", rotate_str.c_str());
   if (rs_focused) { wattroff(window_, A_REVERSE); }
   if (!rs_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
@@ -165,8 +168,11 @@ void PrefsPanel::refresh() {
   mvwprintw(window_, 16, 3, "Max Total Log Size");
   if (!size_enabled) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
 
-  if (ms_focused) { wattron(window_, A_REVERSE); }
-  else if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (ms_focused) {
+    wattron(window_, A_REVERSE);
+  } else if (!size_enabled) {
+    wattron(window_, COLOR_PAIR(CP_GREY));
+  }
   mvwprintw(window_, 17, 5, "%-14s", max_str.c_str());
   if (ms_focused) { wattroff(window_, A_REVERSE); }
   if (!ms_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
