@@ -28,6 +28,8 @@
 
 #pragma once
 
+#include <chrono>
+#include <ctime>
 #include <string>
 #include <vector>
 
@@ -36,6 +38,8 @@
 #include <rcl_interfaces/msg/log.hpp>
 
 namespace log_view {
+
+static constexpr const char* kMarkerNode = "__log_view_marker__";
 
 struct LogLine {
   size_t index;
@@ -69,5 +73,27 @@ struct NodeData {
   bool selected = false;  // true = in whitelist (show when node filter is active)
   size_t count = 0;
 };
+
+inline LogEntry makeMarkerEntry(const std::string& label) {
+  auto now = std::chrono::system_clock::now();
+  std::time_t t = std::chrono::system_clock::to_time_t(now);
+  struct tm tm_info;
+  localtime_r(&t, &tm_info);
+  char buf[32];
+  strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm_info);
+
+  int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+    now.time_since_epoch()).count();
+
+  LogEntry entry;
+  entry.stamp = rclcpp::Time(ns, RCL_ROS_TIME);
+  entry.level = rcl_interfaces::msg::Log::INFO;
+  entry.node = kMarkerNode;
+  entry.file = "";
+  entry.function = "";
+  entry.line = 0;
+  entry.text = {"-------- " + label + " " + buf + " --------"};
+  return entry;
+}
 
 }  // namespace log_view

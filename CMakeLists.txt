@@ -23,6 +23,7 @@ add_library(${PROJECT_NAME}
   src/log_filter.cpp
   src/log_store.cpp
   src/log_view.cpp
+  src/log_writer.cpp
   src/panel_interface.cpp
   src/preferences.cpp
   src/utils.cpp

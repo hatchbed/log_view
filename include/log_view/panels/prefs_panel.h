@@ -30,6 +30,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 
 #include <log_view/panel_interface.h>
 #include <log_view/preferences.h>
@@ -42,26 +43,52 @@ public:
   virtual ~PrefsPanel() {}
   virtual void refresh();
   virtual bool handleKey(int key);
-  virtual bool handleMouse(const MEVENT& event) override { return !hidden(); }
+  bool handleMouse(const MEVENT& event) override { return !hidden(); }
 
   void setOnSave(std::function<void()> cb) { on_save_ = cb; }
 
 protected:
   virtual bool canFocus() const { return false; }
-  virtual bool canNavigate() const override { return !hidden(); }
-  virtual void activate(bool enable) override;
+  bool canNavigate() const override { return !hidden(); }
+  void activate(bool enable) override;
 
 private:
   void cycleTimestampFormat(int direction);
+  void cycleRotateSize(int direction);
+  void cycleMaxSize(int direction);
+  bool isFieldEnabled(int field) const;
+  static std::string formatSize(size_t bytes);
 
   Preferences& prefs_;
   Preferences pending_;
   int selected_ = 0;
   std::function<void()> on_save_;
 
-  static constexpr int kNumFields = 2;
-  static constexpr int kFieldTimestamp = 0;
-  static constexpr int kFieldPersist   = 1;
+  static constexpr int kNumFields       = 5;
+  static constexpr int kFieldTimestamp  = 0;
+  static constexpr int kFieldPersist    = 1;
+  static constexpr int kFieldPersistLogs = 2;
+  static constexpr int kFieldRotateSize = 3;
+  static constexpr int kFieldMaxSize    = 4;
+
+  static constexpr size_t kRotateSizePresets[] = {
+    1ul * 1024 * 1024,
+    5ul * 1024 * 1024,
+    10ul * 1024 * 1024,
+    25ul * 1024 * 1024,
+    50ul * 1024 * 1024,
+    100ul * 1024 * 1024
+  };
+  static constexpr size_t kMaxSizePresets[] = {
+    10ul * 1024 * 1024,
+    50ul * 1024 * 1024,
+    100ul * 1024 * 1024,
+    250ul * 1024 * 1024,
+    500ul * 1024 * 1024,
+    1024ul * 1024 * 1024
+  };
+  static constexpr int kRotateSizeCount = 6;
+  static constexpr int kMaxSizeCount    = 6;
 };
 typedef std::shared_ptr<PrefsPanel> PrefsPanelPtr;
 

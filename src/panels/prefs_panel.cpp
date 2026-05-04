@@ -28,9 +28,14 @@
 
 #include <log_view/panels/prefs_panel.h>
 
+#include <string>
+
 #include <log_view/utils.h>
 
 namespace log_view {
+
+constexpr size_t PrefsPanel::kRotateSizePresets[];
+constexpr size_t PrefsPanel::kMaxSizePresets[];
 
 PrefsPanel::PrefsPanel(int height, int width, int y, int x, Preferences& prefs)
 : PanelInterface(height, width, y, x), prefs_(prefs), pending_(prefs) {}
@@ -50,7 +55,7 @@ void PrefsPanel::refresh() {
   int title_x = std::max(1, width_ / 2 - 7);
   mvwprintw(window_, 0, title_x, " preferences ");
 
-  // --- Timestamp Format field ---
+  // --- Timestamp Format ---
   mvwprintw(window_, 2, 3, "Timestamp Format");
 
   const char* fmt_str = "seconds";
@@ -71,7 +76,7 @@ void PrefsPanel::refresh() {
   mvwprintw(window_, 3, 20, "< >");
   wattroff(window_, COLOR_PAIR(CP_GREY));
 
-  // --- Persist Filter Settings field ---
+  // --- Persist Filter Settings ---
   mvwprintw(window_, 5, 3, "Persist Filter Settings");
 
   const char* persist_str = pending_.persist_filters ? "yes" : "no";
@@ -85,6 +90,70 @@ void PrefsPanel::refresh() {
   wattron(window_, COLOR_PAIR(CP_GREY));
   mvwprintw(window_, 6, 20, "< >");
   wattroff(window_, COLOR_PAIR(CP_GREY));
+
+  // --- Persist Logs ---
+  mvwprintw(window_, 8, 3, "Persist Logs to Disk");
+
+  const char* logs_str = pending_.persist_logs ? "yes" : "no";
+  if (selected_ == kFieldPersistLogs) {
+    wattron(window_, A_REVERSE);
+  }
+  mvwprintw(window_, 9, 5, "%-14s", logs_str);
+  if (selected_ == kFieldPersistLogs) {
+    wattroff(window_, A_REVERSE);
+  }
+  wattron(window_, COLOR_PAIR(CP_GREY));
+  mvwprintw(window_, 9, 20, "< >");
+  wattroff(window_, COLOR_PAIR(CP_GREY));
+
+  // --- Log Rotate Size ---
+  bool size_enabled = pending_.persist_logs;
+  if (!size_enabled) {
+    wattron(window_, COLOR_PAIR(CP_GREY));
+  }
+  mvwprintw(window_, 11, 3, "Log Rotate Size");
+  std::string rotate_str = formatSize(pending_.log_rotate_size);
+  if (size_enabled && selected_ == kFieldRotateSize) {
+    wattron(window_, A_REVERSE);
+  }
+  mvwprintw(window_, 12, 5, "%-14s", rotate_str.c_str());
+  if (size_enabled && selected_ == kFieldRotateSize) {
+    wattroff(window_, A_REVERSE);
+  }
+  if (size_enabled) {
+    wattron(window_, COLOR_PAIR(CP_GREY));
+    mvwprintw(window_, 12, 20, "< >");
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+  } else {
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+    wattron(window_, COLOR_PAIR(CP_GREY));
+    mvwprintw(window_, 12, 20, "< >");
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+  }
+
+  // --- Max Total Log Size ---
+  if (!size_enabled) {
+    wattron(window_, COLOR_PAIR(CP_GREY));
+  }
+  mvwprintw(window_, 14, 3, "Max Total Log Size");
+  std::string max_str = formatSize(pending_.log_max_size);
+  if (size_enabled && selected_ == kFieldMaxSize) {
+    wattron(window_, A_REVERSE);
+  }
+  mvwprintw(window_, 15, 5, "%-14s", max_str.c_str());
+  if (size_enabled && selected_ == kFieldMaxSize) {
+    wattroff(window_, A_REVERSE);
+  }
+  if (size_enabled) {
+    wattron(window_, COLOR_PAIR(CP_GREY));
+    mvwprintw(window_, 15, 20, "< >");
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+  } else {
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+    wattron(window_, COLOR_PAIR(CP_GREY));
+    mvwprintw(window_, 15, 20, "< >");
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+  }
 
   // --- Controls hint ---
   wattron(window_, COLOR_PAIR(CP_GREY));
@@ -113,24 +182,42 @@ bool PrefsPanel::handleKey(int key) {
     }
     hide(true);
   } else if (key == KEY_UP) {
-    if (selected_ > 0) {
-      selected_--;
-    }
+    int next = selected_ - 1;
+    while (next > 0 && !isFieldEnabled(next)) next--;
+    if (next >= 0) selected_ = next;
   } else if (key == KEY_DOWN) {
-    if (selected_ < kNumFields - 1) {
-      selected_++;
-    }
+    int next = selected_ + 1;
+    while (next < kNumFields && !isFieldEnabled(next)) next++;
+    if (next < kNumFields) selected_ = next;
   } else if (key == KEY_LEFT) {
     if (selected_ == kFieldTimestamp) {
       cycleTimestampFormat(-1);
     } else if (selected_ == kFieldPersist) {
       pending_.persist_filters = !pending_.persist_filters;
+    } else if (selected_ == kFieldPersistLogs) {
+      pending_.persist_logs = !pending_.persist_logs;
+      if (!pending_.persist_logs && (selected_ == kFieldRotateSize || selected_ == kFieldMaxSize)) {
+        selected_ = kFieldPersistLogs;
+      }
+    } else if (selected_ == kFieldRotateSize) {
+      cycleRotateSize(-1);
+    } else if (selected_ == kFieldMaxSize) {
+      cycleMaxSize(-1);
     }
   } else if (key == KEY_RIGHT || key == ' ') {
     if (selected_ == kFieldTimestamp) {
       cycleTimestampFormat(1);
     } else if (selected_ == kFieldPersist) {
       pending_.persist_filters = !pending_.persist_filters;
+    } else if (selected_ == kFieldPersistLogs) {
+      pending_.persist_logs = !pending_.persist_logs;
+      if (!pending_.persist_logs && (selected_ == kFieldRotateSize || selected_ == kFieldMaxSize)) {
+        selected_ = kFieldPersistLogs;
+      }
+    } else if (selected_ == kFieldRotateSize) {
+      cycleRotateSize(1);
+    } else if (selected_ == kFieldMaxSize) {
+      cycleMaxSize(1);
     }
   }
 
@@ -145,6 +232,47 @@ void PrefsPanel::cycleTimestampFormat(int direction) {
   int count = 3;
   current = (current + direction + count) % count;
   pending_.timestamp_format = static_cast<Preferences::TimestampFormat>(current);
+}
+
+void PrefsPanel::cycleRotateSize(int direction) {
+  int idx = 0;
+  for (int i = 0; i < kRotateSizeCount; ++i) {
+    if (kRotateSizePresets[i] == pending_.log_rotate_size) {
+      idx = i;
+      break;
+    }
+  }
+  idx = (idx + direction + kRotateSizeCount) % kRotateSizeCount;
+  pending_.log_rotate_size = kRotateSizePresets[idx];
+}
+
+void PrefsPanel::cycleMaxSize(int direction) {
+  int idx = 0;
+  for (int i = 0; i < kMaxSizeCount; ++i) {
+    if (kMaxSizePresets[i] == pending_.log_max_size) {
+      idx = i;
+      break;
+    }
+  }
+  idx = (idx + direction + kMaxSizeCount) % kMaxSizeCount;
+  pending_.log_max_size = kMaxSizePresets[idx];
+}
+
+bool PrefsPanel::isFieldEnabled(int field) const {
+  if (field == kFieldRotateSize || field == kFieldMaxSize) {
+    return pending_.persist_logs;
+  }
+  return true;
+}
+
+std::string PrefsPanel::formatSize(size_t bytes) {
+  if (bytes >= 1024ul * 1024 * 1024) {
+    return std::to_string(bytes / (1024ul * 1024 * 1024)) + " GB";
+  } else if (bytes >= 1024 * 1024) {
+    return std::to_string(bytes / (1024 * 1024)) + " MB";
+  } else {
+    return std::to_string(bytes / 1024) + " KB";
+  }
 }
 
 }  // namespace log_view
