@@ -34,7 +34,13 @@ void StatusPanel::refresh() {
   wattron(window_, A_REVERSE);
   std::string clear(width_, ' ');
   mvwprintw(window_, 0, 0, "%s", clear.c_str());
-  mvwprintw(window_, 0, 0, "logs: %zu", logs_->size());
+  size_t total = logs_->size();
+  size_t filtered = filter_.filteredCount();
+  if (filtered < total) {
+    mvwprintw(window_, 0, 0, "logs: %zu of %zu", filtered, total);
+  } else {
+    mvwprintw(window_, 0, 0, "logs: %zu", total);
+  }
 
   std::string system_time = toString(system_time_.seconds(), 2);
   std::string ros_time =  toString(ros_time_.seconds(), 2);

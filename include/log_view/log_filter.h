@@ -97,6 +97,7 @@ public:
 
   const std::deque<LogLine>& indices() const { return log_indices_; }
   const std::map<std::string, NodeData>& nodes() const { return nodes_; }
+  size_t filteredCount() const;
 
 
   int64_t search_cursor_ = -1;

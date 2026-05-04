@@ -89,7 +89,7 @@ void LogView::init() {
   log_panel_ = std::make_shared<LogPanel>(LINES - 2, COLS, 1, 0, logs_, log_filter_, prefs_);
   panels_.push_back(log_panel_);
 
-  status_panel_ = std::make_shared<StatusPanel>(1, COLS, 0, 0, logs_);
+  status_panel_ = std::make_shared<StatusPanel>(1, COLS, 0, 0, logs_, log_filter_);
   panels_.push_back(status_panel_);
 
   level_panel_ = std::make_shared<LevelPanel>(1, COLS, LINES - 1, 0, log_filter_);
