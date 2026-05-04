@@ -20,7 +20,7 @@
   <depend>rclcpp</depend>
   <depend>rcl_interfaces</depend>
   <depend>libncurses-dev</depend>
-  <depend>libyaml-cpp-dev</depend>
+  <depend>yaml_cpp_vendor</depend>
 
   <exec_depend>xclip</exec_depend>
 

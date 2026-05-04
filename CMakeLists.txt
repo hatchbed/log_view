@@ -4,6 +4,7 @@ project(log_view)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcl_interfaces REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 set(CURSES_NEED_NCURSES TRUE)
@@ -42,7 +43,7 @@ target_link_libraries(${PROJECT_NAME}
   ${CURSES_LIBRARIES}
   ${CURSES_PANEL_LIBRARY}
   rclcpp::rclcpp
-  yaml-cpp
+  yaml-cpp::yaml-cpp
 )
 
 add_executable(log_viewer src/main.cpp)
