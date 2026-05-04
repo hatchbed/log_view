@@ -43,7 +43,7 @@ target_link_libraries(${PROJECT_NAME}
   ${CURSES_LIBRARIES}
   ${CURSES_PANEL_LIBRARY}
   rclcpp::rclcpp
-  yaml-cpp::yaml-cpp
+  yaml-cpp
 )
 
 add_executable(log_viewer src/main.cpp)
