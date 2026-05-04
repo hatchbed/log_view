@@ -63,8 +63,7 @@ public:
   // Called from the UI thread after the log store has been cleared.
   void requestClear();
 
-  // Returns the default log directory: $XDG_DATA_HOME/log_view
-  // (falls back to ~/.local/share/log_view).
+  // Returns the default log directory: <cwd>/.log_view
   static std::string defaultDir();
 
   // Load all persisted log entries in chronological order. Called during startup.

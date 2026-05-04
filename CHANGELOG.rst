@@ -2,6 +2,12 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Scope log and preference storage to the active ROS 2 workspace via ``COLCON_PREFIX_PATH`` (stored under ``<workspace>/.log_view/``).
+* Show file paths in preferences panel; display a warning when persistence is unavailable.
+* Contributors: Marc Alban
+
 0.3.1 (2026-05-04)
 ------------------
 * Persist logs to disk in ``~/.local/share/log_view/`` with configurable rotation and max size.

@@ -73,6 +73,7 @@ private:
   void refreshLayout();
 
   size_t viewSize() const;
+  int prefsPanelWidth() const;
 
   void tab();
   void focusNext(const PanelInterfacePtr& panel);

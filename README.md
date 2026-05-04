@@ -36,9 +36,14 @@ becomes available.
 log_viewer can optionally persist log messages to disk and reload them on startup. This is useful for preserving log
 history across sessions.
 
-Log files are stored under `$XDG_DATA_HOME/log_view/` (typically `~/.local/share/log_view/`) as timestamped text files
-(`log_view_YYYYMMDD_HHMMSS.log`). The format is human-readable and can be inspected with standard tools such as `cat`,
+Log files are stored under `<workspace>/.log_view/` as timestamped text files
+(`log_view_YYYYMMDD_HHMMSS.log`), where `<workspace>` is derived from the `COLCON_PREFIX_PATH`
+environment variable set when a ROS 2 workspace is sourced. This keeps logs isolated per
+workspace. The format is human-readable and can be inspected with standard tools such as `cat`,
 `grep`, and `less`.
+
+Persistence is automatically disabled if `COLCON_PREFIX_PATH` is not set or does not point to
+a valid directory.
 
 Session boundaries are marked in the log with separator lines:
 

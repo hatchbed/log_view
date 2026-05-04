@@ -50,7 +50,7 @@ void LogView::init() {
 
   if (prefs_.persist_logs) {
     log_writer_ = std::make_unique<LogWriter>(
-      LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+      prefs_.workspace_dir, prefs_.log_rotate_size, prefs_.log_max_size);
     for (const auto& entry : log_writer_->loadAll()) {
       logs_->addEntry(entry);
     }
@@ -121,12 +121,16 @@ void LogView::init() {
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
 
-  prefs_panel_ = std::make_shared<PrefsPanel>(21, 42, LINES / 2 - 10, COLS / 2 - 21, prefs_);
+  {
+    int pw = prefsPanelWidth();
+    prefs_panel_ = std::make_shared<PrefsPanel>(
+      23, pw, std::max(0, LINES / 2 - 11), std::max(0, COLS / 2 - pw / 2), prefs_);
+  }
   prefs_panel_->hide(true);
   prefs_panel_->setOnSave([this]() {
     if (prefs_.persist_logs && !log_writer_) {
       log_writer_ = std::make_unique<LogWriter>(
-        LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+        prefs_.workspace_dir, prefs_.log_rotate_size, prefs_.log_max_size);
       logs_->setWriter(log_writer_.get());
       log_writer_->start();
     } else if (!prefs_.persist_logs && log_writer_) {
@@ -137,7 +141,7 @@ void LogView::init() {
       log_writer_->stop();
       logs_->setWriter(nullptr);
       log_writer_ = std::make_unique<LogWriter>(
-        LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+        prefs_.workspace_dir, prefs_.log_rotate_size, prefs_.log_max_size);
       logs_->setWriter(log_writer_.get());
       log_writer_->start();
     }
@@ -435,7 +439,21 @@ void LogView::refreshLayout() {
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
     COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
   help_panel_->resize(24, COLS - 8, 2, 4);
-  prefs_panel_->resize(21, 42, std::max(0, LINES / 2 - 10), std::max(0, COLS / 2 - 21));
+  int pw = prefsPanelWidth();
+  prefs_panel_->resize(23, pw, std::max(0, LINES / 2 - 11), std::max(0, COLS / 2 - pw / 2));
+}
+
+int LogView::prefsPanelWidth() const {
+  // Minimum width to fit all fixed content (hint line at col 3 is 33 chars -> needs 38).
+  int w = 38;
+  if (!prefs_.workspace_dir.empty()) {
+    int s1 = static_cast<int>((prefs_.workspace_dir + "/preferences.yaml").size()) + 6;
+    int s2 = static_cast<int>((prefs_.workspace_dir + "/").size()) + 6;
+    w = std::max(w, std::max(s1, s2));
+  } else if (!prefs_.workspace_error.empty()) {
+    w = std::max(w, static_cast<int>(prefs_.workspace_error.size()) + 6);
+  }
+  return std::min(w, COLS - 4);
 }
 
 void LogView::tab() {

@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 
 #include <yaml-cpp/yaml.h>
@@ -41,15 +42,32 @@ static const char* kFmtSeconds   = "seconds";
 static const char* kFmtElapsed   = "elapsed";
 static const char* kFmtTimeOfDay = "time_of_day";
 
-std::string Preferences::defaultPath() {
-  const char* xdg = std::getenv("XDG_CONFIG_HOME");
-  std::string base = xdg ? xdg : (std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") +
-                                   "/.config");
-  return base + "/log_view/preferences.yaml";
+std::string Preferences::workspaceDataDir(std::string* error) {
+  const char* colcon = std::getenv("COLCON_PREFIX_PATH");
+  if (!colcon || colcon[0] == '\0') {
+    if (error) *error = "COLCON_PREFIX_PATH not set";
+    return "";
+  }
+  std::string first_entry;
+  std::istringstream ss(colcon);
+  std::getline(ss, first_entry, ':');
+  std::filesystem::path install_dir(first_entry);
+  if (!std::filesystem::is_directory(install_dir)) {
+    if (error) *error = "workspace dir not found";
+    return "";
+  }
+  return (install_dir.parent_path() / ".log_view").string();
 }
 
 bool Preferences::load() {
-  std::string path = defaultPath();
+  workspace_dir = workspaceDataDir(&workspace_error);
+  if (workspace_dir.empty()) {
+    persist_logs = false;
+    persist_filters = false;
+    return false;
+  }
+
+  std::string path = workspace_dir + "/preferences.yaml";
 
   try {
     YAML::Node cfg = YAML::LoadFile(path);
@@ -114,8 +132,13 @@ bool Preferences::load() {
 }
 
 void Preferences::save() const {
-  std::string path = defaultPath();
-  std::filesystem::create_directories(std::filesystem::path(path).parent_path());
+  if (workspace_dir.empty()) return;
+  std::string path = workspace_dir + "/preferences.yaml";
+  try {
+    std::filesystem::create_directories(workspace_dir);
+  } catch (...) {
+    return;
+  }
 
   YAML::Emitter out;
   out << YAML::BeginMap;
