@@ -1,33 +1,33 @@
-/**
- * Copyright 2020 Hatchbed L.L.C.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holder nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2020 Hatchbed L.L.C.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the copyright holder nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <log_view/log_view.h>
 
-#include <clocale>
 #include <cctype>
 #include <clocale>
 #include <string>
@@ -39,15 +39,33 @@ namespace log_view {
 LogView::LogView(LogStorePtr& logs) :
   logs_(logs),
   log_filter_(logs_)
-{
-
-}
+{}
 
 LogView::~LogView() {
   close();
 }
 
 void LogView::init() {
+  prefs_.load();
+
+  if (prefs_.persist_logs) {
+    log_writer_ = std::make_unique<LogWriter>(
+      LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+    for (const auto& entry : log_writer_->loadAll()) {
+      logs_->addEntry(entry);
+    }
+    logs_->setWriter(log_writer_.get());
+    log_writer_->start();
+  }
+
+  {
+    auto marker = makeMarkerEntry("Session Started At");
+    logs_->addEntry(marker);
+    if (log_writer_) {
+      log_writer_->enqueue(marker);
+    }
+  }
+
   setlocale(LC_ALL, "");
   initscr();
   use_default_colors();
@@ -68,10 +86,10 @@ void LogView::init() {
 
   refresh();
 
-  log_panel_ = std::make_shared<LogPanel>(LINES - 2, COLS, 1, 0, logs_, log_filter_);
+  log_panel_ = std::make_shared<LogPanel>(LINES - 2, COLS, 1, 0, logs_, log_filter_, prefs_);
   panels_.push_back(log_panel_);
 
-  status_panel_ = std::make_shared<StatusPanel>(1, COLS, 0, 0, logs_);
+  status_panel_ = std::make_shared<StatusPanel>(1, COLS, 0, 0, logs_, log_filter_);
   panels_.push_back(status_panel_);
 
   level_panel_ = std::make_shared<LevelPanel>(1, COLS, LINES - 1, 0, log_filter_);
@@ -89,13 +107,63 @@ void LogView::init() {
   exclude_panel_->hide(true);
   panels_.push_back(exclude_panel_);
 
-  node_panel_ = std::make_shared<NodePanel>(LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
+  node_panel_ = std::make_shared<NodePanel>(
+    LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
   node_panel_->hide(true);
   panels_.push_back(node_panel_);
 
-  help_panel_ = std::make_shared<HelpPanel>(21, COLS - 8, 2, 4);
+  details_panel_ = std::make_shared<DetailsPanel>(
+    LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
+  details_panel_->hide(true);
+  panels_.push_back(details_panel_);
+
+  help_panel_ = std::make_shared<HelpPanel>(24, COLS - 8, 2, 4);
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
+
+  prefs_panel_ = std::make_shared<PrefsPanel>(21, 42, LINES / 2 - 10, COLS / 2 - 21, prefs_);
+  prefs_panel_->hide(true);
+  prefs_panel_->setOnSave([this]() {
+    if (prefs_.persist_logs && !log_writer_) {
+      log_writer_ = std::make_unique<LogWriter>(
+        LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+      logs_->setWriter(log_writer_.get());
+      log_writer_->start();
+    } else if (!prefs_.persist_logs && log_writer_) {
+      log_writer_->stop();
+      logs_->setWriter(nullptr);
+      log_writer_.reset();
+    } else if (log_writer_) {
+      log_writer_->stop();
+      logs_->setWriter(nullptr);
+      log_writer_ = std::make_unique<LogWriter>(
+        LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+      logs_->setWriter(log_writer_.get());
+      log_writer_->start();
+    }
+    log_panel_->forceRefresh();
+  });
+  panels_.push_back(prefs_panel_);
+
+  if (prefs_.persist_filters) {
+    log_filter_.setDebugLevel(prefs_.filters.debug);
+    log_filter_.setInfoLevel(prefs_.filters.info);
+    log_filter_.setWarnLevel(prefs_.filters.warn);
+    log_filter_.setErrorLevel(prefs_.filters.error);
+    log_filter_.setFatalLevel(prefs_.filters.fatal);
+    log_filter_.setEnableNodeFilter(prefs_.filters.node_filter_enabled);
+    log_filter_.setPendingNodeSelected(prefs_.filters.node_whitelist);
+    if (!prefs_.filters.filter_pattern.empty()) {
+      filter_panel_->setInputText(prefs_.filters.filter_pattern);
+      filter_panel_->hide(false);
+      filter_panel_->setFocus(false);
+    }
+    if (!prefs_.filters.exclude_pattern.empty()) {
+      exclude_panel_->setInputText(prefs_.filters.exclude_pattern);
+      exclude_panel_->hide(false);
+      exclude_panel_->setFocus(false);
+    }
+  }
 
   refreshLayout();
 
@@ -106,7 +174,33 @@ void LogView::init() {
 }
 
 void LogView::close() {
-  printf("\033[?1003l\n"); // Disable mouse movement events
+  if (log_writer_) {
+    auto marker = makeMarkerEntry("Recording Ended At");
+    logs_->addEntry(marker);
+    log_writer_->enqueue(marker);
+    log_writer_->stop();
+    logs_->setWriter(nullptr);
+  }
+
+  if (prefs_.persist_filters) {
+    prefs_.filters.debug  = log_filter_.getDebugLevel();
+    prefs_.filters.info   = log_filter_.getInfoLevel();
+    prefs_.filters.warn   = log_filter_.getWarnLevel();
+    prefs_.filters.error  = log_filter_.getErrorLevel();
+    prefs_.filters.fatal  = log_filter_.getFatalLevel();
+    prefs_.filters.node_filter_enabled = log_filter_.getEnableNodeFilter();
+    prefs_.filters.filter_pattern  = log_filter_.getFilterString();
+    prefs_.filters.exclude_pattern = log_filter_.getExcludeString();
+    prefs_.filters.node_whitelist.clear();
+    for (const auto& kv : log_filter_.nodes()) {
+      if (kv.second.selected) {
+        prefs_.filters.node_whitelist.insert(kv.first);
+      }
+    }
+    prefs_.save();
+  }
+
+  printf("\033[?1003l\n");  // Disable mouse movement events
   endwin();
 }
 
@@ -133,14 +227,27 @@ void LogView::update() {
   int ch = getch();
 
   bool key_used = false;
-  if (ch == KEY_MOUSE) {
+
+  if (confirm_clear_) {
+    if (ch != ERR && ch != KEY_MOUSE) {
+      if (ch == 'y' || ch == 'Y') {
+        log_filter_.clearLogs();
+        for (auto& p : panels_) {
+          p->forceRefresh();
+        }
+      }
+      closeConfirmClear();
+    }
+    key_used = true;
+  }
+
+  while (!key_used && ch == KEY_MOUSE) {
     MEVENT event;
     if (getmouse(&event) == OK) {
       if (event.bstate & BUTTON4_PRESSED) {
         ch = KEY_UP;
-        key_used = false;
-      }
-      else {
+        break;
+      } else {
         key_used = true;
 
         bool pressed = event.bstate & (BUTTON1_PRESSED | BUTTON2_PRESSED | BUTTON3_PRESSED);
@@ -152,15 +259,17 @@ void LogView::update() {
               break;
             }
           }
-        }
-        else {
-          for (auto& panel: panels_) {
+        } else {
+          for (auto& panel : panels_) {
             panel->handleMouse(event);
           }
         }
       }
     }
+    timeout(0);
+    ch = getch();
   }
+  timeout(50);
 
   if (!key_used) {
     std::for_each(panels_.rbegin(), panels_.rend(), [&](PanelInterfacePtr& panel) {
@@ -198,87 +307,79 @@ void LogView::update() {
   }
 
   if (!key_used && !mouse_down_) {
-    if (ch == KEY_RESIZE)
-    {
+    if (ch == KEY_RESIZE) {
       refreshLayout();
-    }
-    else if (/*ch == KEY_ESC || */ch == ctrl('q') || ch == ctrl('c')) {
+    } else if (/*ch == KEY_ESC || */ch == ctrl('q') || ch == ctrl('c')) {
       exited_ = true;
-    }
-    else if (ch == '\t') {
+    } else if (ch == '\t') {
       tab();
-    }
-    else if (ch == ctrl('s')) {
+    } else if (ch == ctrl('s')) {
       search_panel_->toggle();
       if (search_panel_->focus()) {
         unfocusOthers(search_panel_);
-      }
-      else {
+      } else {
         focusNext(search_panel_);
       }
       refreshLayout();
-    }
-    else if (ch == ctrl('x')) {
+    } else if (ch == ctrl('x')) {
       search_panel_->clearSearch();
       refreshLayout();
-    }
-    else if (ch == KEY_BACKSPACE) {
+    } else if (ch == KEY_BACKSPACE) {
       log_filter_.prevMatch();
       log_panel_->forceRefresh();
-    }
-    else if (ch == KEY_ENTER_VAL) {
+    } else if (ch == KEY_ENTER_VAL) {
       log_filter_.nextMatch();
       log_panel_->forceRefresh();
-    }
-    else if (ch == ctrl('e')) {
+    } else if (ch == ctrl('e')) {
       exclude_panel_->hide(exclude_panel_->visible());
       if (exclude_panel_->focus()) {
         unfocusOthers(exclude_panel_);
-      }
-      else {
+      } else {
         focusNext(exclude_panel_);
       }
       refreshLayout();
-    }
-    else if (ch == ctrl('f')) {
+    } else if (ch == ctrl('f')) {
       filter_panel_->hide(filter_panel_->visible());
       if (filter_panel_->focus()) {
         unfocusOthers(filter_panel_);
-      }
-      else {
+      } else {
         focusNext(exclude_panel_);
       }
       refreshLayout();
-    }
-    else if (ch == ctrl('h')) {
+    } else if (ch == ctrl('h')) {
       help_panel_->hide(help_panel_->visible());
-    }
-    else if (ch == ctrl('n')) {
+    } else if (ch == ctrl('k')) {
+      prefs_panel_->hide(prefs_panel_->visible());
+    } else if (ch == ctrl('n')) {
+      details_panel_->hide(true);
       node_panel_->hide(node_panel_->visible());
       if (node_panel_->focus()) {
         unfocusOthers(node_panel_);
-      }
-      else {
+      } else {
         focusNext(node_panel_);
       }
-    }
-    else if (ch == KEY_F(1)) {
+    } else if (ch == ctrl('d')) {
+      node_panel_->hide(true);
+      details_panel_->hide(details_panel_->visible());
+      if (details_panel_->focus()) {
+        unfocusOthers(details_panel_);
+      } else {
+        focusNext(details_panel_);
+      }
+    } else if (ch == KEY_F(1)) {
       level_panel_->toggleDebug();
-    }
-    else if (ch == KEY_F(2)) {
+    } else if (ch == KEY_F(2)) {
       level_panel_->toggleInfo();
-    }
-    else if (ch == KEY_F(3)) {
+    } else if (ch == KEY_F(3)) {
       level_panel_->toggleWarn();
-    }
-    else if (ch == KEY_F(4)) {
+    } else if (ch == KEY_F(4)) {
       level_panel_->toggleError();
-    }
-    else if (ch == KEY_F(5)) {
+    } else if (ch == KEY_F(5)) {
       level_panel_->toggleFatal();
-    }
-    else if (ch == KEY_F(7)) {
+    } else if (ch == KEY_F(7)) {
       level_panel_->toggleAllNodes();
+    } else if (ch == ctrl('r')) {
+      openConfirmClear();
     }
   }
 
@@ -292,14 +393,26 @@ void LogView::update() {
     node_panel_->refresh();
   }
 
+  if (details_panel_->visible()) {
+    details_panel_->refresh();
+  }
+
   status_panel_->refresh();
 
   if (help_panel_->visible()) {
     help_panel_->toTop();
   }
 
+  if (prefs_panel_->visible()) {
+    prefs_panel_->toTop();
+  }
+
+  if (confirm_clear_) {
+    top_panel(confirm_panel_);
+  }
+
   curs_set(0);
-  for (auto& panel: panels_) {
+  for (auto& panel : panels_) {
     panel->setCursor();
   }
 
@@ -309,13 +422,25 @@ void LogView::update() {
 
 void LogView::refreshLayout() {
   status_panel_->resize(1, COLS, 0, 0);
-  log_panel_->resize(LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()), COLS, 1, 0);
-  level_panel_->resize(1, COLS, LINES - (1 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()), 0);
-  search_panel_->resize(1, COLS, LINES - (1 + exclude_panel_->visible() + filter_panel_->visible()), 0);
+  log_panel_->resize(
+    LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
+    COLS, 1, 0);
+  level_panel_->resize(
+    1, COLS,
+    LINES - (1 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
+    0);
+  search_panel_->resize(
+    1, COLS, LINES - (1 + exclude_panel_->visible() + filter_panel_->visible()), 0);
   filter_panel_->resize(1, COLS, LINES - (1 + exclude_panel_->visible()), 0);
   exclude_panel_->resize(1, COLS, LINES - 1, 0);
-  node_panel_->resize(LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()), COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
-  help_panel_->resize(21, COLS - 8, 2, 4);
+  node_panel_->resize(
+    LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
+    COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
+  details_panel_->resize(
+    LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
+    COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
+  help_panel_->resize(24, COLS - 8, 2, 4);
+  prefs_panel_->resize(21, 42, std::max(0, LINES / 2 - 10), std::max(0, COLS / 2 - 21));
 }
 
 void LogView::tab() {
@@ -340,7 +465,7 @@ void LogView::tab() {
 }
 
 void LogView::unfocusOthers(const PanelInterfacePtr& focused) {
-  for (auto& panel: panels_) {
+  for (auto& panel : panels_) {
     if (panel != focused) {
       panel->setFocus(false);
     }
@@ -366,6 +491,29 @@ void LogView::focusNext(const PanelInterfacePtr& panel) {
       break;
     }
   }
+}
+
+void LogView::openConfirmClear() {
+  static const std::string msg = "Clear all messages? (y/N)";
+  int width = static_cast<int>(msg.length()) + 4;
+  int height = 3;
+  int y = LINES / 2 - 1;
+  int x = COLS / 2 - width / 2;
+
+  confirm_win_ = newwin(height, width, y, x);
+  confirm_panel_ = new_panel(confirm_win_);
+  box(confirm_win_, 0, 0);
+  mvwprintw(confirm_win_, 1, 2, "%s", msg.c_str());
+  confirm_clear_ = true;
+}
+
+void LogView::closeConfirmClear() {
+  del_panel(confirm_panel_);
+  delwin(confirm_win_);
+  confirm_panel_ = nullptr;
+  confirm_win_ = nullptr;
+  confirm_clear_ = false;
+  refreshLayout();
 }
 
 }  // namespace log_view

@@ -1,29 +1,30 @@
-/**
- * Copyright 2020 Hatchbed L.L.C.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holder nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2020 Hatchbed L.L.C.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the copyright holder nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <log_view/log_filter.h>
 
@@ -31,10 +32,9 @@
 
 namespace log_view {
 
-LogFilter::LogFilter(LogStorePtr& logs) :  logs_(logs)
-{
-
-}
+LogFilter::LogFilter(LogStorePtr& logs) :
+  logs_(logs)
+{}
 
 void LogFilter::setFilter(const std::string& filter) {
   filter_string_ = filter;
@@ -55,6 +55,7 @@ void LogFilter::setFilter(const std::string& filter) {
 }
 
 void LogFilter::setExclude(const std::string& exclude) {
+  exclude_string_ = exclude;
   auto exclude_list = split(exclude, ';');
   bool changed = exclude_list.size() != exclude_list_.size();
 
@@ -116,7 +117,12 @@ void LogFilter::setEnableNodeFilter(bool enable) {
 void LogFilter::toggleNode(const std::string& node) {
   auto element = nodes_.find(node);
   if (element != nodes_.end()) {
-    element->second.exclude = !element->second.exclude;
+    element->second.selected = !element->second.selected;
+    if (element->second.selected) {
+      selected_node_count_++;
+    } else if (selected_node_count_ > 0) {
+      selected_node_count_--;
+    }
 
     filter_nodes_ = true;
     reset();
@@ -124,10 +130,10 @@ void LogFilter::toggleNode(const std::string& node) {
 }
 
 void LogFilter::selectAllNodes() {
-  bool filter_nodes = filter_nodes_;
-  for (auto& elem: nodes_) {
-    elem.second.exclude = false;
+  for (auto& elem : nodes_) {
+    elem.second.selected = true;
   }
+  selected_node_count_ = nodes_.size();
 
   filter_nodes_ = true;
   reset();
@@ -135,13 +141,32 @@ void LogFilter::selectAllNodes() {
 
 void LogFilter::invertNodes() {
   filter_nodes_ = true;
-  for (auto& elem: nodes_) {
-    elem.second.exclude = !elem.second.exclude;
+  selected_node_count_ = 0;
+  for (auto& elem : nodes_) {
+    elem.second.selected = !elem.second.selected;
+    if (elem.second.selected) {
+      selected_node_count_++;
+    }
   }
 
   reset();
 }
 
+void LogFilter::setPendingNodeSelected(const std::set<std::string>& whitelist) {
+  pending_node_selected_ = whitelist;
+}
+
+void LogFilter::clearLogs() {
+  logs_->clear();
+  nodes_.clear();
+  selected_node_count_ = 0;
+  clearSearch();
+  log_indices_.clear();
+  cursor_ = -1;
+  clearSelect();
+  latest_log_index_ = 0;
+  earliest_log_index_ = 0;
+}
 
 void LogFilter::reset() {
   log_indices_.clear();
@@ -157,9 +182,9 @@ void LogFilter::reset() {
 void LogFilter::update() {
   const auto& logs = logs_->logs();
 
-  // TODO process for 50 ms to avoid hogging the screen if there is a backlog
+  // TODO(malban): process for 50 ms to avoid hogging the screen if there is a backlog
 
-  for (;latest_log_index_ < logs.size(); latest_log_index_++) {
+  for (; latest_log_index_ < logs.size(); latest_log_index_++) {
     if (accepted(logs[latest_log_index_], true)) {
       for (size_t i = 0; i < logs[latest_log_index_].text.size(); i++) {
         log_indices_.push_back({latest_log_index_, i});
@@ -171,10 +196,9 @@ void LogFilter::update() {
 void LogFilter::idleProcess() {
   const auto& logs = logs_->logs();
 
-  // TODO process for 50 ms instead of fixed 1000
+  // TODO(malban): process for 50 ms instead of fixed 1000
 
-  for (size_t i = 0; earliest_log_index_ != 0 && i < 1000; earliest_log_index_--, i++)
-  {
+  for (size_t i = 0; earliest_log_index_ != 0 && i < 1000; earliest_log_index_--, i++) {
     if (accepted(logs[earliest_log_index_])) {
       size_t lines = logs[earliest_log_index_].text.size();
       for (size_t j = 1; j <= lines; j++) {
@@ -198,7 +222,8 @@ void LogFilter::idleProcess() {
   }
 
   if (search_cursor_ == -1 && !search_.empty() && !log_indices_.empty()) {
-    if ((search_direction_ == SEARCH_BOTH || search_direction_ == SEARCH_FWD) && search_cursor_fwd_ >= 0) {
+    if ((search_direction_ == SEARCH_BOTH || search_direction_ == SEARCH_FWD) &&
+      search_cursor_fwd_ >= 0) {
       size_t max_idx = search_cursor_fwd_ + 1000;
       for (size_t i = search_cursor_fwd_; i < max_idx && i < log_indices_.size(); i++) {
         auto& index = log_indices_[i];
@@ -211,7 +236,9 @@ void LogFilter::idleProcess() {
       }
     }
 
-    if (search_cursor_ == -1 && (search_direction_ == SEARCH_BOTH || search_direction_ == SEARCH_REV) && search_cursor_rev_ >= 0) {
+    if (search_cursor_ == -1 &&
+      (search_direction_ == SEARCH_BOTH || search_direction_ == SEARCH_REV) &&
+      search_cursor_rev_ >= 0) {
       int64_t min_idx = search_cursor_rev_ - 1000;
       for (int64_t i = search_cursor_rev_; i > min_idx && i >= 0; i--) {
         auto& index = log_indices_[i];
@@ -230,8 +257,21 @@ void LogFilter::setCursor(int64_t index) {
   cursor_ = index;
 }
 
-size_t LogFilter::getCursor() {
+int64_t LogFilter::getCursor() const {
   return cursor_;
+}
+
+const LogEntry& LogFilter::getEntry(int64_t index) const {
+  if (index < 0 || static_cast<size_t>(index) >= log_indices_.size()) {
+    return dummy_entry_;
+  }
+
+  auto& entry = log_indices_[index];
+  if (entry.index >= logs_->logs().size()) {
+    return dummy_entry_;
+  }
+
+  return logs_->logs()[entry.index];
 }
 
 void LogFilter::clearSelect() {
@@ -244,7 +284,7 @@ void LogFilter::setSelectStart(int64_t index) {
   select_end_ = index;
 }
 
-int64_t LogFilter::getSelectStart() {
+int64_t LogFilter::getSelectStart() const {
   return select_start_;
 }
 
@@ -252,7 +292,7 @@ void LogFilter::setSelectEnd(int64_t index) {
   select_end_ = index;
 }
 
-int64_t LogFilter::getSelectEnd() {
+int64_t LogFilter::getSelectEnd() const {
   return select_end_;
 }
 
@@ -310,10 +350,13 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
 
   auto node = nodes_.find(entry.node);
   if (node == nodes_.end()) {
-    nodes_[entry.node].exclude = true;
+    bool selected = pending_node_selected_.count(entry.node) > 0;
+    nodes_[entry.node].selected = selected;
     nodes_[entry.node].count = 1;
-  }
-  else if (new_entry) {
+    if (selected) {
+      selected_node_count_++;
+    }
+  } else if (new_entry) {
     node->second.count++;
   }
 
@@ -321,34 +364,32 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
     if (!debug_level_) {
       return false;
     }
-  }
-  else if (entry.level == rosgraph_msgs::Log::INFO) {
+  } else if (entry.level == rosgraph_msgs::Log::INFO) {
     if (!info_level_) {
       return false;
     }
-  }
-  else if (entry.level == rosgraph_msgs::Log::WARN) {
+  } else if (entry.level == rosgraph_msgs::Log::WARN) {
     if (!warn_level_) {
       return false;
     }
-  }
-  else if (entry.level == rosgraph_msgs::Log::ERROR) {
+  } else if (entry.level == rosgraph_msgs::Log::ERROR) {
     if (!error_level_) {
       return false;
     }
-  }
-  else if (entry.level == rosgraph_msgs::Log::FATAL) {
+  } else if (entry.level == rosgraph_msgs::Log::FATAL) {
     if (!fatal_level_) {
       return false;
     }
   }
 
-  if (filter_nodes_ && nodes_[entry.node].exclude) {
+  // Whitelist mode: only filter when filter is enabled, whitelist is non-empty,
+  // and this node is not in the whitelist.
+  if (filter_nodes_ && selected_node_count_ > 0 && !nodes_[entry.node].selected) {
     return false;
   }
 
-  for (const auto& filter: filter_list_) {
-    for (const auto& line: entry.text) {
+  for (const auto& filter : filter_list_) {
+    for (const auto& line : entry.text) {
       if (contains(line, filter, true)) {
         include = true;
         break;
@@ -357,8 +398,8 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
   }
 
   if (include) {
-    for (const auto& exclude: exclude_list_) {
-      for (const auto& line: entry.text) {
+    for (const auto& exclude : exclude_list_) {
+      for (const auto& line : entry.text) {
         if (contains(line, exclude, true)) {
           include = false;
           break;
@@ -370,5 +411,12 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
   return include;
 }
 
+size_t LogFilter::filteredCount() const {
+  size_t count = 0;
+  for (const auto& ll : log_indices_) {
+    if (ll.line == 0) count++;
+  }
+  return count;
+}
 
 }  // namespace log_view

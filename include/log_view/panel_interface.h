@@ -50,6 +50,7 @@ class PanelInterface {
   virtual bool handleMouse(const MEVENT& event) { return false; }
   virtual bool handleKey(int key) { return false; }
   virtual bool encloses(int y, int x);
+  void setInputText(const std::string& text) { input_text_ = text; }
 
   virtual void hide(bool enable);
   virtual bool setFocus(bool enable);

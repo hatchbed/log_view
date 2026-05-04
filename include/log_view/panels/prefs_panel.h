@@ -28,34 +28,68 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
+#include <string>
 
-#include <ros/ros.h>
-
-#include <log_view/log_filter.h>
-#include <log_view/log_store.h>
 #include <log_view/panel_interface.h>
+#include <log_view/preferences.h>
 
 namespace log_view {
 
-class StatusPanel : public PanelInterface {
-  public:
-  StatusPanel(int height, int width, int y, int x, LogStorePtr& logs, LogFilter& filter)
-  : PanelInterface(height, width, y, x), logs_(logs), filter_(filter) {}
-  virtual ~StatusPanel() {}
+class PrefsPanel : public PanelInterface {
+public:
+  PrefsPanel(int height, int width, int y, int x, Preferences& prefs);
+  virtual ~PrefsPanel() {}
   virtual void refresh();
+  virtual bool handleKey(int key);
+  bool handleMouse(const MEVENT& event) override { return !hidden(); }
 
-  virtual void setConnected(bool connected) { connected_ = connected; }
-  virtual void setRosTime(const ros::Time& time) { ros_time_ = time; }
-  virtual void setSystemTime(const ros::WallTime& time) { system_time_ = time; }
+  void setOnSave(std::function<void()> cb) { on_save_ = cb; }
 
-  protected:
-  bool connected_ = false;
-  ros::Time ros_time_ = ros::Time(0);
-  ros::WallTime system_time_ = ros::WallTime(0);
-  LogStorePtr logs_;
-  LogFilter& filter_;
+protected:
+  virtual bool canFocus() const { return false; }
+  bool canNavigate() const override { return !hidden(); }
+  void activate(bool enable) override;
+
+private:
+  void cycleTimestampFormat(int direction);
+  void cycleRotateSize(int direction);
+  void cycleMaxSize(int direction);
+  bool isFieldEnabled(int field) const;
+  static std::string formatSize(size_t bytes);
+
+  Preferences& prefs_;
+  Preferences pending_;
+  int selected_ = 0;
+  std::function<void()> on_save_;
+
+  static constexpr int kNumFields       = 5;
+  static constexpr int kFieldTimestamp  = 0;
+  static constexpr int kFieldPersist    = 1;
+  static constexpr int kFieldPersistLogs = 2;
+  static constexpr int kFieldRotateSize = 3;
+  static constexpr int kFieldMaxSize    = 4;
+
+  static constexpr size_t kRotateSizePresets[] = {
+    1ul * 1024 * 1024,
+    5ul * 1024 * 1024,
+    10ul * 1024 * 1024,
+    25ul * 1024 * 1024,
+    50ul * 1024 * 1024,
+    100ul * 1024 * 1024
+  };
+  static constexpr size_t kMaxSizePresets[] = {
+    10ul * 1024 * 1024,
+    50ul * 1024 * 1024,
+    100ul * 1024 * 1024,
+    250ul * 1024 * 1024,
+    500ul * 1024 * 1024,
+    1024ul * 1024 * 1024
+  };
+  static constexpr int kRotateSizeCount = 6;
+  static constexpr int kMaxSizeCount    = 6;
 };
-typedef std::shared_ptr<StatusPanel> StatusPanelPtr;
+typedef std::shared_ptr<PrefsPanel> PrefsPanelPtr;
 
 }  // namespace log_view

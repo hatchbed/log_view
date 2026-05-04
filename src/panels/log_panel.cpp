@@ -1,35 +1,43 @@
-/**
- * Copyright 2020 Hatchbed L.L.C.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holder nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2020 Hatchbed L.L.C.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the copyright holder nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
 #include <log_view/panels/log_panel.h>
+
+#include <ctime>
 
 #include <log_view/utils.h>
 
 namespace log_view {
+
+void LogPanel::forceRefresh() {
+  first_stamp_ns_ = -1;
+  PanelInterface::forceRefresh();
+}
 
 void LogPanel::refresh() {
   int64_t cursor = getCursor();
@@ -50,16 +58,14 @@ void LogPanel::refresh() {
         auto entry = filter_.indices()[i];
         printEntry(i, logs[entry.index], entry.line, i);
       }
-    }
-    else {
+    } else {
       size_t start_idx = getContentSize() - getContentHeight();
       for (size_t i = 0; i < height_; i++) {
         auto entry = filter_.indices()[i + start_idx];
         printEntry(i, logs[entry.index], entry.line, i + start_idx);
       }
     }
-  }
-  else if (!following() && (cleared_ || last_cursor_ != cursor || (!filled_ && new_logs))) {
+  } else if (!following() && (cleared_ || last_cursor_ != cursor || (!filled_ && new_logs))) {
     filled_ = false;
     max_length_ = 0;
     if (!cleared_) {
@@ -70,8 +76,7 @@ void LogPanel::refresh() {
     int64_t start_idx = cursor;
     if (cursor >= getContentHeight()) {
       start_idx -= getContentHeight();
-    }
-    else {
+    } else {
       start_idx = 0;
     }
 
@@ -114,18 +119,15 @@ bool LogPanel::handleMouse(const MEVENT& event) {
     startSelect(event.y - y_);
     forceRefresh();
     return true;
-  }
-  else if (mouse_down_ && (event.bstate & REPORT_MOUSE_POSITION)) {
+  } else if (mouse_down_ && (event.bstate & REPORT_MOUSE_POSITION)) {
     endSelect(event.y - y_);
     forceRefresh();
     return true;
-  }
-  else if (event.bstate & BUTTON1_RELEASED) {
+  } else if (event.bstate & BUTTON1_RELEASED) {
     mouse_down_ = false;
     copyToClipboard();
     return true;
-  }
-  else if (!mouse_down_ && (event.bstate & BUTTON3_PRESSED)) {
+  } else if (!mouse_down_ && (event.bstate & BUTTON3_PRESSED)) {
     filter_.clearSelect();
     forceRefresh();
     return true;
@@ -151,7 +153,7 @@ void LogPanel::selectAll() {
 void LogPanel::copyToClipboard() {
   int64_t select_start = filter_.getSelectStart();
   int64_t select_end = filter_.getSelectEnd();
-  if (select_start >=0 && select_end >= 0) {
+  if (select_start >= 0 && select_end >= 0) {
     int start = std::min(select_start, select_end);
     int end = std::max(select_start, select_end);
     const auto& logs = logs_->logs();
@@ -171,8 +173,7 @@ void LogPanel::startSelect(int row) {
   size_t start_idx = filter_.getCursor();
   if (start_idx >= getContentHeight()) {
     start_idx -= getContentHeight();
-  }
-  else {
+  } else {
     start_idx = 0;
   }
 
@@ -183,8 +184,7 @@ void LogPanel::endSelect(int row) {
   size_t start_idx = filter_.getCursor();
   if (start_idx >= getContentHeight()) {
     start_idx -= getContentHeight();
-  }
-  else {
+  } else {
     start_idx = 0;
   }
 
@@ -200,23 +200,49 @@ int LogPanel::getContentWidth() const {
 }
 
 std::string LogPanel::getPrefix(const LogEntry& entry, size_t line) const {
-  std::string text = toString(entry.stamp.toSec(), 4) + " [";
+  if (entry.node == kMarkerNode) {
+    return "";
+  }
+
+  std::string timestamp;
+  switch (prefs_.timestamp_format) {
+    case Preferences::TimestampFormat::ELAPSED: {
+      if (first_stamp_ns_ < 0) {
+        int64_t global_first = logs_->firstStampNs();
+        first_stamp_ns_ = (global_first >= 0) ? global_first : static_cast<int64_t>(entry.stamp.toNSec());
+      }
+      double elapsed = static_cast<double>(static_cast<int64_t>(entry.stamp.toNSec()) - first_stamp_ns_) * 1e-9;
+      timestamp = toString(elapsed, 4);
+      break;
+    }
+    case Preferences::TimestampFormat::TIME_OF_DAY: {
+      int64_t ns = static_cast<int64_t>(entry.stamp.toNSec());
+      time_t secs = static_cast<time_t>(ns / 1000000000LL);
+      int millis = static_cast<int>((ns % 1000000000LL) / 1000000LL);
+      struct tm t;
+      localtime_r(&secs, &t);
+      char buf[16];
+      snprintf(buf, sizeof(buf), "%02d:%02d:%02d.%03d", t.tm_hour, t.tm_min, t.tm_sec, millis);
+      timestamp = buf;
+      break;
+    }
+    default:
+      timestamp = toString(entry.stamp.toSec(), 4);
+      break;
+  }
+
+  std::string text = timestamp + " [";
   if (entry.level == rosgraph_msgs::Log::DEBUG) {
     text += "DEBUG";
-  }
-  else if (entry.level == rosgraph_msgs::Log::INFO) {
+  } else if (entry.level == rosgraph_msgs::Log::INFO) {
     text += "INFO";
-  }
-  else if (entry.level == rosgraph_msgs::Log::WARN) {
+  } else if (entry.level == rosgraph_msgs::Log::WARN) {
     text += "WARN";
-  }
-  else if (entry.level == rosgraph_msgs::Log::ERROR) {
+  } else if (entry.level == rosgraph_msgs::Log::ERROR) {
     text += "ERROR";
-  }
-  else if (entry.level == rosgraph_msgs::Log::FATAL) {
+  } else if (entry.level == rosgraph_msgs::Log::FATAL) {
     text += "FATAL";
-  }
-  else {
+  } else {
     text += std::to_string(entry.level);
   }
   text += "] ";
@@ -228,6 +254,22 @@ std::string LogPanel::getPrefix(const LogEntry& entry, size_t line) const {
 }
 
 void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t idx) {
+  if (entry.node == kMarkerNode) {
+    const std::string& label = entry.text[0];
+    int w = getContentWidth();
+    int pad = std::max(0, (w - static_cast<int>(label.size())) / 2);
+    std::string text(pad, '-');
+    text += label;
+    text += std::string(std::max(0, w - static_cast<int>(text.size())), '-');
+    if (static_cast<int>(text.size()) > w) {
+      text.resize(w);
+    }
+    wattron(window_, COLOR_PAIR(CP_GREY));
+    mvwprintw(window_, row, 0, "%s", text.c_str());
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+    return;
+  }
+
   bool selected = false;
   int64_t select_start = filter_.getSelectStart();
   int64_t select_end = filter_.getSelectEnd();
@@ -243,16 +285,12 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
 
   if (entry.level == rosgraph_msgs::Log::DEBUG) {
     wattron(window_, A_DIM);
-  }
-  else if (entry.level == rosgraph_msgs::Log::ERROR) {
+  } else if (entry.level == rosgraph_msgs::Log::ERROR) {
     wattron(window_, COLOR_PAIR(CP_RED));
-  }
-  else if (entry.level == rosgraph_msgs::Log::FATAL) {
+  } else if (entry.level == rosgraph_msgs::Log::FATAL) {
     wattron(window_, A_BOLD);
     wattron(window_, COLOR_PAIR(CP_RED));
-  }
-  else if (entry.level == rosgraph_msgs::Log::WARN) {
-
+  } else if (entry.level == rosgraph_msgs::Log::WARN) {
     wattron(window_, COLOR_PAIR(CP_YELLOW));
   }
 
@@ -271,33 +309,33 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
 
   if (shift_ >= text.size()) {
     text.clear();
-  }
-  else if (shift_ > 0) {
+  } else if (shift_ > 0) {
     text.erase(0, shift_);
   }
   if (text.size() > width_) {
     text.resize(width_);
   }
 
-  mvwprintw(window_, row, 0, text.c_str());
+  mvwprintw(window_, row, 0, "%s", text.c_str());
 
   if (matched) {
     wattron(window_, COLOR_PAIR(CP_DEFAULT_CYAN));
 
     if (text.empty()) {
       mvwprintw(window_, row, 0, " ");
-    }
-    else {
-      for (const auto& match_index: match_indices) {
+    } else {
+      for (const auto& match_index : match_indices) {
         int64_t start_idx = match_index + prefix.length() - shift_;
         int64_t end_idx = start_idx + match_size;
 
-        start_idx = std::min(static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), start_idx));
-        end_idx = std::min(static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), end_idx));
+        start_idx = std::min(
+          static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), start_idx));
+        end_idx = std::min(
+          static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), end_idx));
 
         int64_t substr_len = std::max(static_cast<int64_t>(1), end_idx - start_idx);
 
-        mvwprintw(window_, row, start_idx, text.substr(start_idx, substr_len).c_str());
+        mvwprintw(window_, row, start_idx, "%s", text.substr(start_idx, substr_len).c_str());
       }
     }
     wattroff(window_, COLOR_PAIR(CP_DEFAULT_CYAN));
@@ -305,15 +343,13 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
 
   if (entry.level == rosgraph_msgs::Log::DEBUG) {
     wattroff(window_, A_DIM);
-  }
-  else if (entry.level == rosgraph_msgs::Log::ERROR) {
+  } else if (entry.level == rosgraph_msgs::Log::ERROR) {
     wattroff(window_, COLOR_PAIR(CP_RED));
   }
   if (entry.level == rosgraph_msgs::Log::FATAL) {
     wattroff(window_, COLOR_PAIR(CP_RED));
     wattroff(window_, A_BOLD);
-  }
-  else if (entry.level == rosgraph_msgs::Log::WARN) {
+  } else if (entry.level == rosgraph_msgs::Log::WARN) {
     wattroff(window_, COLOR_PAIR(CP_YELLOW));
   }
 
@@ -322,4 +358,4 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
   }
 }
 
-} // namespace log_view
+}  // namespace log_view

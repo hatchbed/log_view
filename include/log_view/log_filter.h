@@ -1,37 +1,41 @@
-/**
- * Copyright 2020 Hatchbed L.L.C.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. Neither the name of the copyright holder nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright 2020 Hatchbed L.L.C.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+//    * Redistributions of source code must retain the above copyright
+//      notice, this list of conditions and the following disclaimer.
+//
+//    * Redistributions in binary form must reproduce the above copyright
+//      notice, this list of conditions and the following disclaimer in the
+//      documentation and/or other materials provided with the distribution.
+//
+//    * Neither the name of the copyright holder nor the names of its
+//      contributors may be used to endorse or promote products derived from
+//      this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef LOG_VIEW_LOG_FILTER_H_
-#define LOG_VIEW_LOG_FILTER_H_
+#pragma once
 
 #include <array>
 #include <cstdint>
 #include <deque>
 #include <map>
+#include <memory>
+#include <set>
+#include <string>
+#include <vector>
 
 #include <log_view/datatypes.h>
 #include <log_view/log_store.h>
@@ -47,6 +51,7 @@ public:
   void setFilter(const std::string& filter);
   std::string getFilterString() const { return filter_string_; }
   void setExclude(const std::string& exclude);
+  std::string getExcludeString() const { return exclude_string_; }
   void setDebugLevel(bool enable);
   void setInfoLevel(bool enable);
   void setWarnLevel(bool enable);
@@ -56,6 +61,7 @@ public:
   void toggleNode(const std::string& node);
   void selectAllNodes();
   void invertNodes();
+  void setPendingNodeSelected(const std::set<std::string>& whitelist);
 
   bool getDebugLevel() const { return debug_level_; }
   bool getInfoLevel() const { return info_level_; }
@@ -63,21 +69,25 @@ public:
   bool getErrorLevel() const { return error_level_; }
   bool getFatalLevel() const { return fatal_level_; }
   bool getEnableNodeFilter() const { return filter_nodes_; }
+  bool getNodeFilterActive() const { return filter_nodes_ && selected_node_count_ > 0; }
 
+  void clearLogs();
   void reset();
   void update();
   void idleProcess();
 
   void setCursor(int64_t index);
-  size_t getCursor();
+  int64_t getCursor() const;
 
   void clearSelect();
 
   void setSelectStart(int64_t index);
-  int64_t getSelectStart();
+  int64_t getSelectStart() const;
 
   void setSelectEnd(int64_t index);
-  int64_t getSelectEnd();
+  int64_t getSelectEnd() const;
+
+  const LogEntry& getEntry(int64_t index) const;
 
   void search(const std::string& pattern);
   void nextMatch();
@@ -87,6 +97,7 @@ public:
 
   const std::deque<LogLine>& indices() const { return log_indices_; }
   const std::map<std::string, NodeData>& nodes() const { return nodes_; }
+  size_t filteredCount() const;
 
   int64_t search_cursor_ = -1;
   int64_t search_cursor_fwd_ = -1;
@@ -96,6 +107,7 @@ private:
   bool accepted(const LogEntry& entry, bool new_entry = false);
 
   LogStorePtr logs_;
+  LogEntry dummy_entry_;
 
   std::deque<LogLine> log_indices_;
   size_t latest_log_index_ = 0;
@@ -119,6 +131,10 @@ private:
   bool filter_nodes_ = false;
 
   std::string filter_string_;
+  std::string exclude_string_;
+
+  size_t selected_node_count_ = 0;
+  std::set<std::string> pending_node_selected_;
 
   std::vector<std::string> filter_list_;
   std::vector<std::string> exclude_list_;
@@ -128,5 +144,3 @@ private:
 typedef std::shared_ptr<LogFilter> LogFilterPtr;
 
 }  // namespace log_view
-
-#endif  // LOG_VIEW_LOG_FILTER_H_

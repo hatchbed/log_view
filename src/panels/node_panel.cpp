@@ -72,7 +72,7 @@ void NodePanel::refresh() {
     const auto& node_data = nodes[i + start_idx].second;
     auto name = nodes[i + start_idx].first;
     bool hover = focus_ && (name == selected_);
-    bool selected = !node_data.exclude;
+    bool selected = node_data.selected;
 
     std::string text = name + ": " + std::to_string(node_data.count);
 

@@ -1,4 +1,4 @@
-// Copyright 2020 Hatchbed L.L.C.
+// Copyright 2026 Hatchbed L.L.C.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -26,59 +26,29 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <log_view/log_store.h>
+#pragma once
+
+#include <memory>
+
+#include <log_view/log_filter.h>
+#include <log_view/panel_interface.h>
 
 namespace log_view {
 
-const std::deque<LogEntry>& LogStore::logs() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  for (const auto& entry : new_logs_) {
-    logs_.push_back(entry);
-  }
-  new_logs_.clear();
-  return logs_;
-}
+class DetailsPanel : public PanelInterface {
+  public:
+  DetailsPanel(int height, int width, int y, int x, const LogFilter& filter)
+  : PanelInterface(height, width, y, x), filter_(filter) {}
+  virtual ~DetailsPanel() {}
+  virtual void refresh();
 
-size_t LogStore::size() const {
-  return logs_.size();
-}
+  protected:
+  virtual size_t getContentSize() const { return 6; }
+  virtual int getContentHeight() const { return height_ - 2; }
+  virtual int getContentWidth() const;
 
-int64_t LogStore::firstStampNs() const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (!logs_.empty()) {
-    return static_cast<int64_t>(logs_.front().stamp.toNSec());
-  }
-  if (!new_logs_.empty()) {
-    return static_cast<int64_t>(new_logs_.front().stamp.toNSec());
-  }
-  return -1;
-}
-
-void LogStore::addEntry(const rosgraph_msgs::LogConstPtr& msg) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  new_logs_.push_back(LogEntry(*msg));
-  if (writer_) {
-    writer_->enqueue(new_logs_.back());
-  }
-}
-
-void LogStore::addEntry(const LogEntry& entry) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  logs_.push_back(entry);
-}
-
-void LogStore::clear() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  logs_.clear();
-  new_logs_.clear();
-  if (writer_) {
-    writer_->requestClear();
-  }
-}
-
-void LogStore::setWriter(LogWriter* writer) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  writer_ = writer;
-}
+  const LogFilter& filter_;
+};
+typedef std::shared_ptr<DetailsPanel> DetailsPanelPtr;
 
 }  // namespace log_view

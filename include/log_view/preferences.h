@@ -26,59 +26,41 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <log_view/log_store.h>
+#pragma once
+
+#include <set>
+#include <string>
 
 namespace log_view {
 
-const std::deque<LogEntry>& LogStore::logs() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  for (const auto& entry : new_logs_) {
-    logs_.push_back(entry);
-  }
-  new_logs_.clear();
-  return logs_;
-}
+struct Preferences {
+  enum class TimestampFormat {
+    SECONDS,      // raw ROS seconds since epoch (e.g. 1234567.8901)
+    ELAPSED,      // seconds since first message
+    TIME_OF_DAY,  // local wall clock HH:MM:SS.mmm
+  };
 
-size_t LogStore::size() const {
-  return logs_.size();
-}
+  TimestampFormat timestamp_format = TimestampFormat::SECONDS;
+  bool persist_filters = false;
+  bool persist_logs = false;
+  size_t log_rotate_size = 10 * 1024 * 1024;   // 10 MB
+  size_t log_max_size    = 100 * 1024 * 1024;   // 100 MB
 
-int64_t LogStore::firstStampNs() const {
-  std::lock_guard<std::mutex> lock(mutex_);
-  if (!logs_.empty()) {
-    return static_cast<int64_t>(logs_.front().stamp.toNSec());
-  }
-  if (!new_logs_.empty()) {
-    return static_cast<int64_t>(new_logs_.front().stamp.toNSec());
-  }
-  return -1;
-}
+  struct FilterSettings {
+    bool debug = true;
+    bool info = true;
+    bool warn = true;
+    bool error = true;
+    bool fatal = true;
+    bool node_filter_enabled = false;
+    std::string filter_pattern;
+    std::string exclude_pattern;
+    std::set<std::string> node_whitelist;  // nodes to show when node filter is enabled
+  } filters;
 
-void LogStore::addEntry(const rosgraph_msgs::LogConstPtr& msg) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  new_logs_.push_back(LogEntry(*msg));
-  if (writer_) {
-    writer_->enqueue(new_logs_.back());
-  }
-}
-
-void LogStore::addEntry(const LogEntry& entry) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  logs_.push_back(entry);
-}
-
-void LogStore::clear() {
-  std::lock_guard<std::mutex> lock(mutex_);
-  logs_.clear();
-  new_logs_.clear();
-  if (writer_) {
-    writer_->requestClear();
-  }
-}
-
-void LogStore::setWriter(LogWriter* writer) {
-  std::lock_guard<std::mutex> lock(mutex_);
-  writer_ = writer;
-}
+  static std::string defaultPath();
+  bool load();
+  void save() const;
+};
 
 }  // namespace log_view
