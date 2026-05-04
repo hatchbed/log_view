@@ -46,6 +46,26 @@ LogView::~LogView() {
 }
 
 void LogView::init() {
+  prefs_.load();
+
+  if (prefs_.persist_logs) {
+    log_writer_ = std::make_unique<LogWriter>(
+      LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+    for (const auto& entry : log_writer_->loadAll()) {
+      logs_->addEntry(entry);
+    }
+    logs_->setWriter(log_writer_.get());
+    log_writer_->start();
+  }
+
+  {
+    auto marker = makeMarkerEntry("Session Started At");
+    logs_->addEntry(marker);
+    if (log_writer_) {
+      log_writer_->enqueue(marker);
+    }
+  }
+
   setlocale(LC_ALL, "");
   initscr();
   use_default_colors();
@@ -66,7 +86,7 @@ void LogView::init() {
 
   refresh();
 
-  log_panel_ = std::make_shared<LogPanel>(LINES - 2, COLS, 1, 0, logs_, log_filter_);
+  log_panel_ = std::make_shared<LogPanel>(LINES - 2, COLS, 1, 0, logs_, log_filter_, prefs_);
   panels_.push_back(log_panel_);
 
   status_panel_ = std::make_shared<StatusPanel>(1, COLS, 0, 0, logs_, log_filter_);
@@ -97,9 +117,53 @@ void LogView::init() {
   details_panel_->hide(true);
   panels_.push_back(details_panel_);
 
-  help_panel_ = std::make_shared<HelpPanel>(22, COLS - 8, 2, 4);
+  help_panel_ = std::make_shared<HelpPanel>(24, COLS - 8, 2, 4);
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
+
+  prefs_panel_ = std::make_shared<PrefsPanel>(21, 42, LINES / 2 - 10, COLS / 2 - 21, prefs_);
+  prefs_panel_->hide(true);
+  prefs_panel_->setOnSave([this]() {
+    if (prefs_.persist_logs && !log_writer_) {
+      log_writer_ = std::make_unique<LogWriter>(
+        LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+      logs_->setWriter(log_writer_.get());
+      log_writer_->start();
+    } else if (!prefs_.persist_logs && log_writer_) {
+      log_writer_->stop();
+      logs_->setWriter(nullptr);
+      log_writer_.reset();
+    } else if (log_writer_) {
+      log_writer_->stop();
+      logs_->setWriter(nullptr);
+      log_writer_ = std::make_unique<LogWriter>(
+        LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+      logs_->setWriter(log_writer_.get());
+      log_writer_->start();
+    }
+    log_panel_->forceRefresh();
+  });
+  panels_.push_back(prefs_panel_);
+
+  if (prefs_.persist_filters) {
+    log_filter_.setDebugLevel(prefs_.filters.debug);
+    log_filter_.setInfoLevel(prefs_.filters.info);
+    log_filter_.setWarnLevel(prefs_.filters.warn);
+    log_filter_.setErrorLevel(prefs_.filters.error);
+    log_filter_.setFatalLevel(prefs_.filters.fatal);
+    log_filter_.setEnableNodeFilter(prefs_.filters.node_filter_enabled);
+    log_filter_.setPendingNodeSelected(prefs_.filters.node_whitelist);
+    if (!prefs_.filters.filter_pattern.empty()) {
+      filter_panel_->setInputText(prefs_.filters.filter_pattern);
+      filter_panel_->hide(false);
+      filter_panel_->setFocus(false);
+    }
+    if (!prefs_.filters.exclude_pattern.empty()) {
+      exclude_panel_->setInputText(prefs_.filters.exclude_pattern);
+      exclude_panel_->hide(false);
+      exclude_panel_->setFocus(false);
+    }
+  }
 
   refreshLayout();
 
@@ -110,6 +174,31 @@ void LogView::init() {
 }
 
 void LogView::close() {
+  if (log_writer_) {
+    auto marker = makeMarkerEntry("Recording Ended At");
+    logs_->addEntry(marker);
+    log_writer_->enqueue(marker);
+    log_writer_->stop();
+    logs_->setWriter(nullptr);
+  }
+
+  if (prefs_.persist_filters) {
+    prefs_.filters.debug  = log_filter_.getDebugLevel();
+    prefs_.filters.info   = log_filter_.getInfoLevel();
+    prefs_.filters.warn   = log_filter_.getWarnLevel();
+    prefs_.filters.error  = log_filter_.getErrorLevel();
+    prefs_.filters.fatal  = log_filter_.getFatalLevel();
+    prefs_.filters.node_filter_enabled = log_filter_.getEnableNodeFilter();
+    prefs_.filters.filter_pattern  = log_filter_.getFilterString();
+    prefs_.filters.exclude_pattern = log_filter_.getExcludeString();
+    prefs_.filters.node_whitelist.clear();
+    for (const auto& [name, data] : log_filter_.nodes()) {
+      if (data.selected) {
+        prefs_.filters.node_whitelist.insert(name);
+      }
+    }
+    prefs_.save();
+  }
   printf("\033[?1003l\n");  // Disable mouse movement events
   endwin();
 }
@@ -133,12 +222,26 @@ void LogView::update() {
   int ch = getch();
 
   bool key_used = false;
-  if (ch == KEY_MOUSE) {
+
+  if (confirm_clear_) {
+    if (ch != ERR && ch != KEY_MOUSE) {
+      if (ch == 'y' || ch == 'Y') {
+        log_filter_.clearLogs();
+        for (auto& p : panels_) {
+          p->forceRefresh();
+        }
+      }
+      closeConfirmClear();
+    }
+    key_used = true;
+  }
+
+  while (!key_used && ch == KEY_MOUSE) {
     MEVENT event;
     if (getmouse(&event) == OK) {
       if (event.bstate & BUTTON4_PRESSED) {
         ch = KEY_UP;
-        key_used = false;
+        break;
       } else {
         key_used = true;
 
@@ -158,7 +261,10 @@ void LogView::update() {
         }
       }
     }
+    timeout(0);
+    ch = getch();
   }
+  timeout(50);
 
   if (!key_used) {
     std::for_each(panels_.rbegin(), panels_.rend(), [&](PanelInterfacePtr& panel) {
@@ -237,6 +343,8 @@ void LogView::update() {
       refreshLayout();
     } else if (ch == ctrl('h')) {
       help_panel_->hide(help_panel_->visible());
+    } else if (ch == ctrl('k')) {
+      prefs_panel_->hide(prefs_panel_->visible());
     } else if (ch == ctrl('n')) {
       details_panel_->hide(true);
       node_panel_->hide(node_panel_->visible());
@@ -265,6 +373,8 @@ void LogView::update() {
       level_panel_->toggleFatal();
     } else if (ch == KEY_F(7)) {
       level_panel_->toggleAllNodes();
+    } else if (ch == ctrl('r')) {
+      openConfirmClear();
     }
   }
 
@@ -286,6 +396,14 @@ void LogView::update() {
 
   if (help_panel_->visible()) {
     help_panel_->toTop();
+  }
+
+  if (prefs_panel_->visible()) {
+    prefs_panel_->toTop();
+  }
+
+  if (confirm_clear_) {
+    top_panel(confirm_panel_);
   }
 
   curs_set(0);
@@ -316,7 +434,8 @@ void LogView::refreshLayout() {
   details_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
     COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
-  help_panel_->resize(22, COLS - 8, 2, 4);
+  help_panel_->resize(24, COLS - 8, 2, 4);
+  prefs_panel_->resize(21, 42, std::max(0, LINES / 2 - 10), std::max(0, COLS / 2 - 21));
 }
 
 void LogView::tab() {
@@ -367,6 +486,29 @@ void LogView::focusNext(const PanelInterfacePtr& panel) {
       break;
     }
   }
+}
+
+void LogView::openConfirmClear() {
+  static const std::string msg = "Clear all messages? (y/N)";
+  int width = static_cast<int>(msg.length()) + 4;
+  int height = 3;
+  int y = LINES / 2 - 1;
+  int x = COLS / 2 - width / 2;
+
+  confirm_win_ = newwin(height, width, y, x);
+  confirm_panel_ = new_panel(confirm_win_);
+  box(confirm_win_, 0, 0);
+  mvwprintw(confirm_win_, 1, 2, "%s", msg.c_str());
+  confirm_clear_ = true;
+}
+
+void LogView::closeConfirmClear() {
+  del_panel(confirm_panel_);
+  delwin(confirm_win_);
+  confirm_panel_ = nullptr;
+  confirm_win_ = nullptr;
+  confirm_clear_ = false;
+  refreshLayout();
 }
 
 }  // namespace log_view

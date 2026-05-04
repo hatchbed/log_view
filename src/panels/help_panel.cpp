@@ -58,7 +58,9 @@ HelpPanel::HelpPanel(int height, int width, int y, int x) :
     {17, "Backspace", "Prev match"},
     {18, "Enter", "Next match"},
     {19, "CTRL-e", "Enable/disable text exclude filter"},
-    {20, "CTRL-f", "Enable/disable text include filter"}})
+    {20, "CTRL-f", "Enable/disable text include filter"},
+    {21, "CTRL-k", "Show/hide preferences"},
+    {22, "CTRL-r", "Clear message history"}})
 {
   for (const auto& key : keys_) {
     longest_key_ = std::max(longest_key_, key.key.length());

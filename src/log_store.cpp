@@ -43,10 +43,42 @@ size_t LogStore::size() const {
   return logs_.size();
 }
 
+int64_t LogStore::firstStampNs() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (!logs_.empty()) {
+    return logs_.front().stamp.nanoseconds();
+  }
+  if (!new_logs_.empty()) {
+    return new_logs_.front().stamp.nanoseconds();
+  }
+  return -1;
+}
+
 void LogStore::addEntry(const rcl_interfaces::msg::Log::SharedPtr msg) {
   std::lock_guard<std::mutex> lock(mutex_);
-
   new_logs_.push_back(LogEntry(*msg));
+  if (writer_) {
+    writer_->enqueue(new_logs_.back());
+  }
+}
+
+void LogStore::addEntry(const LogEntry& entry) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  logs_.push_back(entry);
+}
+
+void LogStore::clear() {
+  std::lock_guard<std::mutex> lock(mutex_);
+  logs_.clear();
+  new_logs_.clear();
+  if (writer_) {
+    writer_->requestClear();
+  }
+}
+
+void LogStore::setWriter(LogWriter* writer) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  writer_ = writer;
 }
 
 }  // namespace log_view

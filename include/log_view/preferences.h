@@ -28,72 +28,39 @@
 
 #pragma once
 
-#include <chrono>
-#include <ctime>
+#include <set>
 #include <string>
-#include <vector>
-
-#include <log_view/utils.h>
-#include <rclcpp/rclcpp.hpp>
-#include <rcl_interfaces/msg/log.hpp>
 
 namespace log_view {
 
-static constexpr const char* kMarkerNode = "__log_view_marker__";
+struct Preferences {
+  enum class TimestampFormat {
+    SECONDS,      // raw ROS seconds since epoch (e.g. 1234567.8901)
+    ELAPSED,      // seconds since first message
+    TIME_OF_DAY,  // local wall clock HH:MM:SS.mmm
+  };
 
-struct LogLine {
-  size_t index;
-  size_t line;
+  TimestampFormat timestamp_format = TimestampFormat::SECONDS;
+  bool persist_filters = false;
+  bool persist_logs = false;
+  size_t log_rotate_size = 10 * 1024 * 1024;   // 10 MB
+  size_t log_max_size    = 100 * 1024 * 1024;   // 100 MB
+
+  struct FilterSettings {
+    bool debug = true;
+    bool info = true;
+    bool warn = true;
+    bool error = true;
+    bool fatal = true;
+    bool node_filter_enabled = false;
+    std::string filter_pattern;
+    std::string exclude_pattern;
+    std::set<std::string> node_whitelist;  // nodes to show when node filter is enabled
+  } filters;
+
+  static std::string defaultPath();
+  bool load();
+  void save() const;
 };
-
-struct LogEntry
-{
-  LogEntry() = default;
-  LogEntry(const LogEntry& entry) = default;
-  explicit LogEntry(const rcl_interfaces::msg::Log& log) :
-    stamp(log.stamp),
-    level(log.level),
-    node(log.name),
-    file(log.file),
-    function(log.function),
-    line(log.line),
-    text(split(log.msg, '\n'))
-  {}
-
-  rclcpp::Time stamp;
-  uint8_t level;
-  std::string node;
-  std::string file;
-  std::string function;
-  uint32_t line;
-  std::vector<std::string> text;
-};
-
-struct NodeData {
-  bool selected = false;  // true = in whitelist (show when node filter is active)
-  size_t count = 0;
-};
-
-inline LogEntry makeMarkerEntry(const std::string& label) {
-  auto now = std::chrono::system_clock::now();
-  std::time_t t = std::chrono::system_clock::to_time_t(now);
-  struct tm tm_info;
-  localtime_r(&t, &tm_info);
-  char buf[32];
-  strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &tm_info);
-
-  int64_t ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
-    now.time_since_epoch()).count();
-
-  LogEntry entry;
-  entry.stamp = rclcpp::Time(ns, RCL_ROS_TIME);
-  entry.level = rcl_interfaces::msg::Log::INFO;
-  entry.node = kMarkerNode;
-  entry.file = "";
-  entry.function = "";
-  entry.line = 0;
-  entry.text = {"-------- " + label + " " + buf + " --------"};
-  return entry;
-}
 
 }  // namespace log_view

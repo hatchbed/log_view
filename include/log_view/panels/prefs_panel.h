@@ -28,84 +28,68 @@
 
 #pragma once
 
-#include <curses.h>
-#include <panel.h>
-
+#include <functional>
 #include <memory>
-#include <vector>
+#include <string>
 
-#include <rclcpp/rclcpp.hpp>
-
-#include <log_view/log_filter.h>
-#include <log_view/log_store.h>
-#include <log_view/log_writer.h>
 #include <log_view/panel_interface.h>
-#include <log_view/panels/details_panel.h>
-#include <log_view/panels/exclude_panel.h>
-#include <log_view/panels/filter_panel.h>
-#include <log_view/panels/help_panel.h>
-#include <log_view/panels/level_panel.h>
-#include <log_view/panels/log_panel.h>
-#include <log_view/panels/node_panel.h>
-#include <log_view/panels/prefs_panel.h>
-#include <log_view/panels/search_panel.h>
-#include <log_view/panels/status_panel.h>
 #include <log_view/preferences.h>
 
 namespace log_view {
 
-class LogView {
+class PrefsPanel : public PanelInterface {
 public:
-  explicit LogView(LogStorePtr& logs);
-  ~LogView();
+  PrefsPanel(int height, int width, int y, int x, Preferences& prefs);
+  virtual ~PrefsPanel() {}
+  virtual void refresh();
+  virtual bool handleKey(int key);
+  bool handleMouse(const MEVENT& event) override { return !hidden(); }
 
-  void init();
-  void close();
+  void setOnSave(std::function<void()> cb) { on_save_ = cb; }
 
-  bool exited() const;
-
-  void setRosTime(const rclcpp::Time& time);
-  void setSystemTime(const rclcpp::Time& time);
-
-  void update();
+protected:
+  virtual bool canFocus() const { return false; }
+  bool canNavigate() const override { return !hidden(); }
+  void activate(bool enable) override;
 
 private:
-  void refreshLayout();
+  void cycleTimestampFormat(int direction);
+  void cycleRotateSize(int direction);
+  void cycleMaxSize(int direction);
+  bool isFieldEnabled(int field) const;
+  static std::string formatSize(size_t bytes);
 
-  size_t viewSize() const;
+  Preferences& prefs_;
+  Preferences pending_;
+  int selected_ = 0;
+  std::function<void()> on_save_;
 
-  void tab();
-  void focusNext(const PanelInterfacePtr& panel);
-  void unfocusOthers(const PanelInterfacePtr& focused);
-  void openConfirmClear();
-  void closeConfirmClear();
+  static constexpr int kNumFields       = 5;
+  static constexpr int kFieldTimestamp  = 0;
+  static constexpr int kFieldPersist    = 1;
+  static constexpr int kFieldPersistLogs = 2;
+  static constexpr int kFieldRotateSize = 3;
+  static constexpr int kFieldMaxSize    = 4;
 
-  LogStorePtr logs_;
-  LogFilter log_filter_;
-  Preferences prefs_;
-  std::unique_ptr<LogWriter> log_writer_;
-
-  bool exited_ = false;
-  bool mouse_down_ = false;
-  bool confirm_clear_ = false;
-
-  bool node_select_ = true;
-  bool log_scroll_ = false;
-
-  WINDOW* confirm_win_ = nullptr;
-  PANEL* confirm_panel_ = nullptr;
-
-  std::vector<PanelInterfacePtr> panels_;
-  DetailsPanelPtr details_panel_;
-  StatusPanelPtr status_panel_;
-  LevelPanelPtr level_panel_;
-  SearchPanelPtr search_panel_;
-  FilterPanelPtr filter_panel_;
-  ExcludePanelPtr exclude_panel_;
-  LogPanelPtr log_panel_;
-  NodePanelPtr node_panel_;
-  HelpPanelPtr help_panel_;
-  PrefsPanelPtr prefs_panel_;
+  static constexpr size_t kRotateSizePresets[] = {
+    1ul * 1024 * 1024,
+    5ul * 1024 * 1024,
+    10ul * 1024 * 1024,
+    25ul * 1024 * 1024,
+    50ul * 1024 * 1024,
+    100ul * 1024 * 1024
+  };
+  static constexpr size_t kMaxSizePresets[] = {
+    10ul * 1024 * 1024,
+    50ul * 1024 * 1024,
+    100ul * 1024 * 1024,
+    250ul * 1024 * 1024,
+    500ul * 1024 * 1024,
+    1024ul * 1024 * 1024
+  };
+  static constexpr int kRotateSizeCount = 6;
+  static constexpr int kMaxSizeCount    = 6;
 };
+typedef std::shared_ptr<PrefsPanel> PrefsPanelPtr;
 
 }  // namespace log_view

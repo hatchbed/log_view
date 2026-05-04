@@ -55,6 +55,7 @@ void LogFilter::setFilter(const std::string& filter) {
 }
 
 void LogFilter::setExclude(const std::string& exclude) {
+  exclude_string_ = exclude;
   auto exclude_list = split(exclude, ';');
   bool changed = exclude_list.size() != exclude_list_.size();
 
@@ -116,7 +117,12 @@ void LogFilter::setEnableNodeFilter(bool enable) {
 void LogFilter::toggleNode(const std::string& node) {
   auto element = nodes_.find(node);
   if (element != nodes_.end()) {
-    element->second.exclude = !element->second.exclude;
+    element->second.selected = !element->second.selected;
+    if (element->second.selected) {
+      selected_node_count_++;
+    } else if (selected_node_count_ > 0) {
+      selected_node_count_--;
+    }
 
     filter_nodes_ = true;
     reset();
@@ -124,10 +130,10 @@ void LogFilter::toggleNode(const std::string& node) {
 }
 
 void LogFilter::selectAllNodes() {
-  bool filter_nodes = filter_nodes_;
   for (auto& elem : nodes_) {
-    elem.second.exclude = false;
+    elem.second.selected = true;
   }
+  selected_node_count_ = nodes_.size();
 
   filter_nodes_ = true;
   reset();
@@ -135,13 +141,33 @@ void LogFilter::selectAllNodes() {
 
 void LogFilter::invertNodes() {
   filter_nodes_ = true;
+  selected_node_count_ = 0;
   for (auto& elem : nodes_) {
-    elem.second.exclude = !elem.second.exclude;
+    elem.second.selected = !elem.second.selected;
+    if (elem.second.selected) {
+      selected_node_count_++;
+    }
   }
 
   reset();
 }
 
+void LogFilter::setPendingNodeSelected(const std::set<std::string>& whitelist) {
+  pending_node_selected_ = whitelist;
+}
+
+
+void LogFilter::clearLogs() {
+  logs_->clear();
+  nodes_.clear();
+  selected_node_count_ = 0;
+  clearSearch();
+  log_indices_.clear();
+  cursor_ = -1;
+  clearSelect();
+  latest_log_index_ = 0;
+  earliest_log_index_ = 0;
+}
 
 void LogFilter::reset() {
   log_indices_.clear();
@@ -326,8 +352,12 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
 
   auto node = nodes_.find(entry.node);
   if (node == nodes_.end()) {
-    nodes_[entry.node].exclude = true;
+    bool selected = pending_node_selected_.count(entry.node) > 0;
+    nodes_[entry.node].selected = selected;
     nodes_[entry.node].count = 1;
+    if (selected) {
+      selected_node_count_++;
+    }
   } else if (new_entry) {
     node->second.count++;
   }
@@ -354,7 +384,9 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
     }
   }
 
-  if (filter_nodes_ && nodes_[entry.node].exclude) {
+  // Whitelist mode: only filter when filter is enabled, whitelist is non-empty,
+  // and this node is not in the whitelist.
+  if (filter_nodes_ && selected_node_count_ > 0 && !nodes_[entry.node].selected) {
     return false;
   }
 

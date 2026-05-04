@@ -33,6 +33,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -50,6 +51,7 @@ public:
   void setFilter(const std::string& filter);
   std::string getFilterString() const { return filter_string_; }
   void setExclude(const std::string& exclude);
+  std::string getExcludeString() const { return exclude_string_; }
   void setDebugLevel(bool enable);
   void setInfoLevel(bool enable);
   void setWarnLevel(bool enable);
@@ -59,6 +61,7 @@ public:
   void toggleNode(const std::string& node);
   void selectAllNodes();
   void invertNodes();
+  void setPendingNodeSelected(const std::set<std::string>& whitelist);
 
   bool getDebugLevel() const { return debug_level_; }
   bool getInfoLevel() const { return info_level_; }
@@ -66,7 +69,9 @@ public:
   bool getErrorLevel() const { return error_level_; }
   bool getFatalLevel() const { return fatal_level_; }
   bool getEnableNodeFilter() const { return filter_nodes_; }
+  bool getNodeFilterActive() const { return filter_nodes_ && selected_node_count_ > 0; }
 
+  void clearLogs();
   void reset();
   void update();
   void idleProcess();
@@ -127,6 +132,10 @@ private:
   bool filter_nodes_ = false;
 
   std::string filter_string_;
+  std::string exclude_string_;
+
+  size_t selected_node_count_ = 0;
+  std::set<std::string> pending_node_selected_;
 
   std::vector<std::string> filter_list_;
   std::vector<std::string> exclude_list_;

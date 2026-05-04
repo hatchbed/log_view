@@ -33,6 +33,7 @@
 #include <mutex>
 
 #include <log_view/datatypes.h>
+#include <log_view/log_writer.h>
 #include <rcl_interfaces/msg/log.hpp>
 
 namespace log_view {
@@ -44,13 +45,22 @@ public:
   const std::deque<LogEntry>& logs();
   size_t size() const;
 
+  // Returns the nanosecond timestamp of the oldest log entry, or -1 if empty.
+  // Does not flush new_logs_ and has no side effects.
+  int64_t firstStampNs() const;
+
   void addEntry(const rcl_interfaces::msg::Log::SharedPtr msg);
+  void addEntry(const LogEntry& entry);
+  void clear();
+
+  void setWriter(LogWriter* writer);
 
 private:
   std::deque<LogEntry> logs_;
   std::deque<LogEntry> new_logs_;
 
-  std::mutex mutex_;
+  mutable std::mutex mutex_;
+  LogWriter* writer_ = nullptr;
 };
 typedef std::shared_ptr<LogStore> LogStorePtr;
 
