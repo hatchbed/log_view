@@ -31,12 +31,14 @@
 #include <curses.h>
 #include <panel.h>
 
+#include <memory>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
 
 #include <log_view/log_filter.h>
 #include <log_view/log_store.h>
+#include <log_view/log_writer.h>
 #include <log_view/panel_interface.h>
 #include <log_view/panels/details_panel.h>
 #include <log_view/panels/exclude_panel.h>
@@ -81,6 +83,7 @@ private:
   LogStorePtr logs_;
   LogFilter log_filter_;
   Preferences prefs_;
+  std::unique_ptr<LogWriter> log_writer_;
 
   bool exited_ = false;
   bool mouse_down_ = false;

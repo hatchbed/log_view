@@ -200,11 +200,16 @@ int LogPanel::getContentWidth() const {
 }
 
 std::string LogPanel::getPrefix(const LogEntry& entry, size_t line) const {
+  if (entry.node == kMarkerNode) {
+    return "";
+  }
+
   std::string timestamp;
   switch (prefs_.timestamp_format) {
     case Preferences::TimestampFormat::ELAPSED: {
       if (first_stamp_ns_ < 0) {
-        first_stamp_ns_ = entry.stamp.nanoseconds();
+        int64_t global_first = logs_->firstStampNs();
+        first_stamp_ns_ = (global_first >= 0) ? global_first : entry.stamp.nanoseconds();
       }
       double elapsed = static_cast<double>(entry.stamp.nanoseconds() - first_stamp_ns_) * 1e-9;
       timestamp = toString(elapsed, 4);
@@ -248,6 +253,22 @@ std::string LogPanel::getPrefix(const LogEntry& entry, size_t line) const {
 }
 
 void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t idx) {
+  if (entry.node == kMarkerNode) {
+    const std::string& label = entry.text[0];
+    int w = getContentWidth();
+    int pad = std::max(0, (w - static_cast<int>(label.size())) / 2);
+    std::string text(pad, '-');
+    text += label;
+    text += std::string(std::max(0, w - static_cast<int>(text.size())), '-');
+    if (static_cast<int>(text.size()) > w) {
+      text.resize(w);
+    }
+    wattron(window_, COLOR_PAIR(CP_GREY));
+    mvwprintw(window_, row, 0, "%s", text.c_str());
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+    return;
+  }
+
   bool selected = false;
   int64_t select_start = filter_.getSelectStart();
   int64_t select_end = filter_.getSelectEnd();

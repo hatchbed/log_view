@@ -48,6 +48,24 @@ LogView::~LogView() {
 void LogView::init() {
   prefs_.load();
 
+  if (prefs_.persist_logs) {
+    log_writer_ = std::make_unique<LogWriter>(
+      LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+    for (const auto& entry : log_writer_->loadAll()) {
+      logs_->addEntry(entry);
+    }
+    logs_->setWriter(log_writer_.get());
+    log_writer_->start();
+  }
+
+  {
+    auto marker = makeMarkerEntry("Session Started At");
+    logs_->addEntry(marker);
+    if (log_writer_) {
+      log_writer_->enqueue(marker);
+    }
+  }
+
   setlocale(LC_ALL, "");
   initscr();
   use_default_colors();
@@ -103,9 +121,26 @@ void LogView::init() {
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
 
-  prefs_panel_ = std::make_shared<PrefsPanel>(11, 42, LINES / 2 - 5, COLS / 2 - 21, prefs_);
+  prefs_panel_ = std::make_shared<PrefsPanel>(21, 42, LINES / 2 - 10, COLS / 2 - 21, prefs_);
   prefs_panel_->hide(true);
   prefs_panel_->setOnSave([this]() {
+    if (prefs_.persist_logs && !log_writer_) {
+      log_writer_ = std::make_unique<LogWriter>(
+        LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+      logs_->setWriter(log_writer_.get());
+      log_writer_->start();
+    } else if (!prefs_.persist_logs && log_writer_) {
+      log_writer_->stop();
+      logs_->setWriter(nullptr);
+      log_writer_.reset();
+    } else if (log_writer_) {
+      log_writer_->stop();
+      logs_->setWriter(nullptr);
+      log_writer_ = std::make_unique<LogWriter>(
+        LogWriter::defaultDir(), prefs_.log_rotate_size, prefs_.log_max_size);
+      logs_->setWriter(log_writer_.get());
+      log_writer_->start();
+    }
     log_panel_->forceRefresh();
   });
   panels_.push_back(prefs_panel_);
@@ -139,6 +174,14 @@ void LogView::init() {
 }
 
 void LogView::close() {
+  if (log_writer_) {
+    auto marker = makeMarkerEntry("Recording Ended At");
+    logs_->addEntry(marker);
+    log_writer_->enqueue(marker);
+    log_writer_->stop();
+    logs_->setWriter(nullptr);
+  }
+
   if (prefs_.persist_filters) {
     prefs_.filters.debug  = log_filter_.getDebugLevel();
     prefs_.filters.info   = log_filter_.getInfoLevel();
@@ -392,7 +435,7 @@ void LogView::refreshLayout() {
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
     COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
   help_panel_->resize(24, COLS - 8, 2, 4);
-  prefs_panel_->resize(11, 42, std::max(0, LINES / 2 - 5), std::max(0, COLS / 2 - 21));
+  prefs_panel_->resize(21, 42, std::max(0, LINES / 2 - 10), std::max(0, COLS / 2 - 21));
 }
 
 void LogView::tab() {

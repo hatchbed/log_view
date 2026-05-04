@@ -69,6 +69,16 @@ bool Preferences::load() {
       persist_filters = cfg["persist_filters"].as<bool>();
     }
 
+    if (cfg["persist_logs"]) {
+      persist_logs = cfg["persist_logs"].as<bool>();
+    }
+    if (cfg["log_rotate_size"]) {
+      log_rotate_size = cfg["log_rotate_size"].as<size_t>();
+    }
+    if (cfg["log_max_size"]) {
+      log_max_size = cfg["log_max_size"].as<size_t>();
+    }
+
     if (persist_filters && cfg["filters"]) {
       auto f = cfg["filters"];
 
@@ -123,6 +133,9 @@ void Preferences::save() const {
   }
 
   out << YAML::Key << "persist_filters" << YAML::Value << persist_filters;
+  out << YAML::Key << "persist_logs"    << YAML::Value << persist_logs;
+  out << YAML::Key << "log_rotate_size" << YAML::Value << log_rotate_size;
+  out << YAML::Key << "log_max_size"    << YAML::Value << log_max_size;
 
   if (persist_filters) {
     out << YAML::Key << "filters" << YAML::Value << YAML::BeginMap;
