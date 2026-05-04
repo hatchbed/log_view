@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.1 (2026-05-04)
+------------------
 * Persist logs to disk in ``~/.local/share/log_view/`` with configurable rotation and max size.
 * Load persisted logs on startup.
 * Add preferences panel (CTRL-k) for persistence and filter settings.
