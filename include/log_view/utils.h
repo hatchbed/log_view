@@ -66,6 +66,10 @@ void toClipboard(const std::string& text);
 std::string stripAnsi(const std::string& raw);
 std::vector<AnsiSegment> parseAnsiSegments(const std::string& raw);
 
+size_t utf8DisplayWidth(const std::string& s);
+std::string utf8EraseDisplayCols(const std::string& s, size_t cols);
+std::string utf8TruncateDisplayCols(const std::string& s, size_t cols);
+
 extern attr_t kAttrGrey;    // replaces COLOR_PAIR(CP_GREY)   — dim on 8-color terminals
 extern attr_t kAttrGreyBg;  // replaces COLOR_PAIR(CP_DEFAULT_GREY) — reverse on 8-color terminals
 

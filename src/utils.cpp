@@ -29,6 +29,7 @@
 #include <log_view/utils.h>
 
 #include <cstdlib>
+#include <cwchar>
 
 #include <sstream>
 
@@ -224,6 +225,69 @@ std::vector<AnsiSegment> parseAnsiSegments(const std::string& raw) {
     segments.push_back(std::move(seg));
   }
   return segments;
+}
+
+size_t utf8DisplayWidth(const std::string& s) {
+  size_t width = 0;
+  const char* p = s.c_str();
+  const char* end = p + s.size();
+  mbstate_t state{};
+  while (p < end) {
+    wchar_t wc;
+    size_t n = mbrtowc(&wc, p, static_cast<size_t>(end - p), &state);
+    if (n == 0 || n == static_cast<size_t>(-1) || n == static_cast<size_t>(-2)) {
+      ++p;
+      ++width;
+    } else {
+      int w = wcwidth(wc);
+      if (w > 0) width += static_cast<size_t>(w);
+      p += n;
+    }
+  }
+  return width;
+}
+
+std::string utf8EraseDisplayCols(const std::string& s, size_t cols) {
+  size_t consumed = 0;
+  const char* p = s.c_str();
+  const char* end = p + s.size();
+  mbstate_t state{};
+  while (p < end && consumed < cols) {
+    wchar_t wc;
+    size_t n = mbrtowc(&wc, p, static_cast<size_t>(end - p), &state);
+    if (n == 0 || n == static_cast<size_t>(-1) || n == static_cast<size_t>(-2)) {
+      ++consumed;
+      ++p;
+    } else {
+      int w = wcwidth(wc);
+      if (w > 0) consumed += static_cast<size_t>(w);
+      p += n;
+    }
+  }
+  return s.substr(static_cast<size_t>(p - s.c_str()));
+}
+
+std::string utf8TruncateDisplayCols(const std::string& s, size_t cols) {
+  size_t used = 0;
+  const char* p = s.c_str();
+  const char* end = p + s.size();
+  mbstate_t state{};
+  while (p < end) {
+    wchar_t wc;
+    size_t n = mbrtowc(&wc, p, static_cast<size_t>(end - p), &state);
+    size_t col_w;
+    if (n == 0 || n == static_cast<size_t>(-1) || n == static_cast<size_t>(-2)) {
+      col_w = 1;
+      n = 1;
+    } else {
+      int w = wcwidth(wc);
+      col_w = (w > 0) ? static_cast<size_t>(w) : 0;
+    }
+    if (used + col_w > cols) break;
+    used += col_w;
+    p += n;
+  }
+  return s.substr(0, static_cast<size_t>(p - s.c_str()));
 }
 
 void toClipboard(const std::string& text) {

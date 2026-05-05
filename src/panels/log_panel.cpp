@@ -298,7 +298,7 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
   std::string stripped_line = raw_line.find('\033') != std::string::npos
     ? stripAnsi(raw_line) : raw_line;
   std::string text = prefix + stripped_line;
-  max_length_ = std::max(max_length_, text.size());
+  max_length_ = std::max(max_length_, utf8DisplayWidth(text));
 
   std::string match = filter_.getSearch();
   size_t match_size = match.size();
@@ -309,14 +309,10 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
     matched = !match_indices.empty();
   }
 
-  if (shift_ >= text.size()) {
-    text.clear();
-  } else if (shift_ > 0) {
-    text.erase(0, shift_);
+  if (shift_ > 0) {
+    text = utf8EraseDisplayCols(text, static_cast<size_t>(shift_));
   }
-  if (text.size() > width_) {
-    text.resize(width_);
-  }
+  text = utf8TruncateDisplayCols(text, static_cast<size_t>(width_));
 
   mvwprintw(window_, row, 0, "%s", text.c_str());
 
