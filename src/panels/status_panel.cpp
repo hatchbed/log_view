@@ -34,7 +34,7 @@ void StatusPanel::refresh() {
   wattron(window_, A_REVERSE);
   std::string clear(width_, ' ');
   mvwprintw(window_, 0, 0, "%s", clear.c_str());
-  size_t total = logs_->size();
+  size_t total = logs_->logCount();
   size_t filtered = filter_.filteredCount();
   if (filtered < total) {
     mvwprintw(window_, 0, 0, "logs: %zu of %zu", filtered, total);

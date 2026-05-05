@@ -108,6 +108,8 @@ public:
 
 private:
   bool accepted(const LogEntry& entry, bool new_entry = false);
+  void cleanSessionBoundaries();
+  void removeAtIndex(size_t pos);
 
   LogStorePtr logs_;
   LogEntry dummy_entry_;

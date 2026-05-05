@@ -43,6 +43,10 @@ size_t LogStore::size() const {
   return logs_.size();
 }
 
+size_t LogStore::logCount() const {
+  return logs_.size() - marker_count_;
+}
+
 int64_t LogStore::firstStampNs() const {
   std::lock_guard<std::mutex> lock(mutex_);
   if (!logs_.empty()) {
@@ -64,6 +68,9 @@ void LogStore::addEntry(const rcl_interfaces::msg::Log::SharedPtr msg) {
 
 void LogStore::addEntry(const LogEntry& entry) {
   std::lock_guard<std::mutex> lock(mutex_);
+  if (entry.node == kMarkerNode) {
+    marker_count_++;
+  }
   logs_.push_back(entry);
 }
 
@@ -71,6 +78,7 @@ void LogStore::clear() {
   std::lock_guard<std::mutex> lock(mutex_);
   logs_.clear();
   new_logs_.clear();
+  marker_count_ = 0;
   if (writer_) {
     writer_->requestClear();
   }

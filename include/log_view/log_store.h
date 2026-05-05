@@ -44,6 +44,7 @@ public:
 
   const std::deque<LogEntry>& logs();
   size_t size() const;
+  size_t logCount() const;
 
   // Returns the nanosecond timestamp of the oldest log entry, or -1 if empty.
   // Does not flush new_logs_ and has no side effects.
@@ -58,6 +59,7 @@ public:
 private:
   std::deque<LogEntry> logs_;
   std::deque<LogEntry> new_logs_;
+  size_t marker_count_ = 0;
 
   mutable std::mutex mutex_;
   LogWriter* writer_ = nullptr;
