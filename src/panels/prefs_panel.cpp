@@ -43,6 +43,10 @@ PrefsPanel::PrefsPanel(int height, int width, int y, int x, Preferences& prefs)
 void PrefsPanel::activate(bool enable) {
   if (enable) {
     pending_ = prefs_;
+    if (prefs_.workspace_dir.empty()) {
+      pending_.persist_logs    = false;
+      pending_.persist_filters = false;
+    }
     selected_ = 0;
     werase(window_);
     refresh();
@@ -55,6 +59,9 @@ void PrefsPanel::refresh() {
   int title_x = std::max(1, width_ / 2 - 7);
   mvwprintw(window_, 0, title_x, " preferences ");
 
+  bool workspace_ok = !prefs_.workspace_dir.empty();
+  int path_max = width_ - 6;
+
   // --- Timestamp Format ---
   mvwprintw(window_, 2, 3, "Timestamp Format");
 
@@ -65,95 +72,106 @@ void PrefsPanel::refresh() {
     fmt_str = "time of day";
   }
 
-  if (selected_ == kFieldTimestamp) {
-    wattron(window_, A_REVERSE);
-  }
+  bool ts_focused = (selected_ == kFieldTimestamp);
+  if (ts_focused) { wattron(window_, A_REVERSE); }
   mvwprintw(window_, 3, 5, "%-14s", fmt_str);
-  if (selected_ == kFieldTimestamp) {
-    wattroff(window_, A_REVERSE);
-  }
-  wattron(window_, COLOR_PAIR(CP_GREY));
+  if (ts_focused) { wattroff(window_, A_REVERSE); }
+  if (!ts_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
   mvwprintw(window_, 3, 20, "< >");
-  wattroff(window_, COLOR_PAIR(CP_GREY));
+  if (!ts_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
 
   // --- Persist Filter Settings ---
+  if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
   mvwprintw(window_, 5, 3, "Persist Filter Settings");
+  if (!workspace_ok) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
 
-  const char* persist_str = pending_.persist_filters ? "yes" : "no";
-  if (selected_ == kFieldPersist) {
-    wattron(window_, A_REVERSE);
+  if (workspace_ok) {
+    std::string path = prefs_.workspace_dir + "/preferences.yaml";
+    if (static_cast<int>(path.size()) > path_max) {
+      path = "..." + path.substr(path.size() - (path_max - 3));
+    }
+    wattron(window_, COLOR_PAIR(CP_GREY));
+    mvwprintw(window_, 6, 3, "%-*s", path_max, path.c_str());
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+  } else {
+    wattron(window_, COLOR_PAIR(CP_YELLOW));
+    std::string msg = prefs_.workspace_error;
+    if (static_cast<int>(msg.size()) > path_max) { msg = msg.substr(0, path_max); }
+    mvwprintw(window_, 6, 3, "%-*s", path_max, msg.c_str());
+    wattroff(window_, COLOR_PAIR(CP_YELLOW));
   }
-  mvwprintw(window_, 6, 5, "%-14s", persist_str);
-  if (selected_ == kFieldPersist) {
-    wattroff(window_, A_REVERSE);
-  }
-  wattron(window_, COLOR_PAIR(CP_GREY));
-  mvwprintw(window_, 6, 20, "< >");
-  wattroff(window_, COLOR_PAIR(CP_GREY));
 
-  // --- Persist Logs ---
-  mvwprintw(window_, 8, 3, "Persist Logs to Disk");
+  bool pf_focused = workspace_ok && (selected_ == kFieldPersist);
+  if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (pf_focused) { wattron(window_, A_REVERSE); }
+  mvwprintw(window_, 7, 5, "%-14s", pending_.persist_filters ? "yes" : "no");
+  if (pf_focused) { wattroff(window_, A_REVERSE); }
+  if (!pf_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  mvwprintw(window_, 7, 20, "< >");
+  if (!workspace_ok || !pf_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
 
-  const char* logs_str = pending_.persist_logs ? "yes" : "no";
-  if (selected_ == kFieldPersistLogs) {
-    wattron(window_, A_REVERSE);
+  // --- Persist Logs to Disk ---
+  if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  mvwprintw(window_, 9, 3, "Persist Logs to Disk");
+  if (!workspace_ok) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+
+  if (workspace_ok) {
+    std::string path = prefs_.workspace_dir + "/";
+    if (static_cast<int>(path.size()) > path_max) {
+      path = "..." + path.substr(path.size() - (path_max - 3));
+    }
+    wattron(window_, COLOR_PAIR(CP_GREY));
+    mvwprintw(window_, 10, 3, "%-*s", path_max, path.c_str());
+    wattroff(window_, COLOR_PAIR(CP_GREY));
+  } else {
+    wattron(window_, COLOR_PAIR(CP_YELLOW));
+    std::string msg = prefs_.workspace_error;
+    if (static_cast<int>(msg.size()) > path_max) { msg = msg.substr(0, path_max); }
+    mvwprintw(window_, 10, 3, "%-*s", path_max, msg.c_str());
+    wattroff(window_, COLOR_PAIR(CP_YELLOW));
   }
-  mvwprintw(window_, 9, 5, "%-14s", logs_str);
-  if (selected_ == kFieldPersistLogs) {
-    wattroff(window_, A_REVERSE);
-  }
-  wattron(window_, COLOR_PAIR(CP_GREY));
-  mvwprintw(window_, 9, 20, "< >");
-  wattroff(window_, COLOR_PAIR(CP_GREY));
+
+  bool pl_focused = workspace_ok && (selected_ == kFieldPersistLogs);
+  if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (pl_focused) { wattron(window_, A_REVERSE); }
+  mvwprintw(window_, 11, 5, "%-14s", pending_.persist_logs ? "yes" : "no");
+  if (pl_focused) { wattroff(window_, A_REVERSE); }
+  if (!pl_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  mvwprintw(window_, 11, 20, "< >");
+  if (!workspace_ok || !pl_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
 
   // --- Log Rotate Size ---
-  bool size_enabled = pending_.persist_logs;
-  if (!size_enabled) {
-    wattron(window_, COLOR_PAIR(CP_GREY));
-  }
-  mvwprintw(window_, 11, 3, "Log Rotate Size");
+  bool size_enabled = workspace_ok && pending_.persist_logs;
+  bool rs_focused = size_enabled && (selected_ == kFieldRotateSize);
   std::string rotate_str = formatSize(pending_.log_rotate_size);
-  if (size_enabled && selected_ == kFieldRotateSize) {
-    wattron(window_, A_REVERSE);
-  }
-  mvwprintw(window_, 12, 5, "%-14s", rotate_str.c_str());
-  if (size_enabled && selected_ == kFieldRotateSize) {
-    wattroff(window_, A_REVERSE);
-  }
-  if (size_enabled) {
-    wattron(window_, COLOR_PAIR(CP_GREY));
-    mvwprintw(window_, 12, 20, "< >");
-    wattroff(window_, COLOR_PAIR(CP_GREY));
-  } else {
-    wattroff(window_, COLOR_PAIR(CP_GREY));
-    wattron(window_, COLOR_PAIR(CP_GREY));
-    mvwprintw(window_, 12, 20, "< >");
-    wattroff(window_, COLOR_PAIR(CP_GREY));
-  }
+
+  if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  mvwprintw(window_, 13, 3, "Log Rotate Size");
+  if (!size_enabled) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+
+  if (rs_focused) { wattron(window_, A_REVERSE); }
+  else if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  mvwprintw(window_, 14, 5, "%-14s", rotate_str.c_str());
+  if (rs_focused) { wattroff(window_, A_REVERSE); }
+  if (!rs_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  mvwprintw(window_, 14, 20, "< >");
+  if (!rs_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
 
   // --- Max Total Log Size ---
-  if (!size_enabled) {
-    wattron(window_, COLOR_PAIR(CP_GREY));
-  }
-  mvwprintw(window_, 14, 3, "Max Total Log Size");
+  bool ms_focused = size_enabled && (selected_ == kFieldMaxSize);
   std::string max_str = formatSize(pending_.log_max_size);
-  if (size_enabled && selected_ == kFieldMaxSize) {
-    wattron(window_, A_REVERSE);
-  }
-  mvwprintw(window_, 15, 5, "%-14s", max_str.c_str());
-  if (size_enabled && selected_ == kFieldMaxSize) {
-    wattroff(window_, A_REVERSE);
-  }
-  if (size_enabled) {
-    wattron(window_, COLOR_PAIR(CP_GREY));
-    mvwprintw(window_, 15, 20, "< >");
-    wattroff(window_, COLOR_PAIR(CP_GREY));
-  } else {
-    wattroff(window_, COLOR_PAIR(CP_GREY));
-    wattron(window_, COLOR_PAIR(CP_GREY));
-    mvwprintw(window_, 15, 20, "< >");
-    wattroff(window_, COLOR_PAIR(CP_GREY));
-  }
+
+  if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  mvwprintw(window_, 16, 3, "Max Total Log Size");
+  if (!size_enabled) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+
+  if (ms_focused) { wattron(window_, A_REVERSE); }
+  else if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  mvwprintw(window_, 17, 5, "%-14s", max_str.c_str());
+  if (ms_focused) { wattroff(window_, A_REVERSE); }
+  if (!ms_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  mvwprintw(window_, 17, 20, "< >");
+  if (!ms_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
 
   // --- Controls hint ---
   wattron(window_, COLOR_PAIR(CP_GREY));
@@ -259,8 +277,12 @@ void PrefsPanel::cycleMaxSize(int direction) {
 }
 
 bool PrefsPanel::isFieldEnabled(int field) const {
+  bool workspace_ok = !prefs_.workspace_dir.empty();
+  if (field == kFieldPersist || field == kFieldPersistLogs) {
+    return workspace_ok;
+  }
   if (field == kFieldRotateSize || field == kFieldMaxSize) {
-    return pending_.persist_logs;
+    return workspace_ok && pending_.persist_logs;
   }
   return true;
 }

@@ -30,7 +30,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <cstdlib>
 #include <ctime>
 #include <fstream>
 #include <stdexcept>
@@ -44,6 +43,7 @@
   namespace fs = std::experimental::filesystem;
 #endif
 
+#include <log_view/preferences.h>
 #include <log_view/utils.h>
 
 namespace log_view {
@@ -65,6 +65,7 @@ LogWriter::~LogWriter() {
 }
 
 void LogWriter::start() {
+  if (log_dir_.empty()) return;
   running_ = true;
   thread_ = std::thread(&LogWriter::writerLoop, this);
 }
@@ -93,14 +94,12 @@ void LogWriter::requestClear() {
 }
 
 std::string LogWriter::defaultDir() {
-  const char* xdg = std::getenv("XDG_DATA_HOME");
-  std::string base = xdg ? xdg :
-    (std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") + "/.local/share");
-  return base + "/log_view";
+  return Preferences::workspaceDataDir();
 }
 
 std::vector<LogEntry> LogWriter::loadAll() const {
   std::vector<LogEntry> result;
+  if (log_dir_.empty() || !fs::is_directory(log_dir_)) return result;
   auto files = findLogFiles();
 
   for (const auto& path : files) {
@@ -301,15 +300,17 @@ void LogWriter::pruneToMaxSize() {
 
 std::vector<std::string> LogWriter::findLogFiles() const {
   std::vector<std::string> files;
-  if (!fs::exists(log_dir_)) return files;
+  if (log_dir_.empty() || !fs::is_directory(log_dir_)) return files;
 
-  for (const auto& entry : fs::directory_iterator(log_dir_)) {
-    const auto& p = entry.path();
-    std::string fname = p.filename().string();
-    if (p.extension() == ".log" && fname.substr(0, 9) == "log_view_") {
-      files.push_back(p.string());
+  try {
+    for (const auto& entry : fs::directory_iterator(log_dir_)) {
+      const auto& p = entry.path();
+      std::string fname = p.filename().string();
+      if (p.extension() == ".log" && fname.substr(0, 9) == "log_view_") {
+        files.push_back(p.string());
+      }
     }
-  }
+  } catch (...) {}
   std::sort(files.begin(), files.end());
   return files;
 }

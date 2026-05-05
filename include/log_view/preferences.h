@@ -46,6 +46,11 @@ struct Preferences {
   size_t log_rotate_size = 10 * 1024 * 1024;   // 10 MB
   size_t log_max_size    = 100 * 1024 * 1024;   // 100 MB
 
+  // Set by load(). Empty means CMAKE_PREFIX_PATH was absent, pointed only at
+  // the system ROS installation, or the derived workspace directory was invalid.
+  std::string workspace_dir;
+  std::string workspace_error;
+
   struct FilterSettings {
     bool debug = true;
     bool info = true;
@@ -58,7 +63,12 @@ struct Preferences {
     std::set<std::string> node_whitelist;  // nodes to show when node filter is enabled
   } filters;
 
-  static std::string defaultPath();
+  // Returns <workspace_root>/.log_view derived from CMAKE_PREFIX_PATH,
+  // or "" if the env var is absent, points only at the system ROS installation,
+  // or the derived workspace directory is invalid.
+  // If error is non-null it receives a human-readable reason on failure.
+  static std::string workspaceDataDir(std::string* error = nullptr);
+
   bool load();
   void save() const;
 };

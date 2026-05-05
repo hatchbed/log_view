@@ -30,6 +30,7 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 
 #if __has_include(<filesystem>)
@@ -48,15 +49,34 @@ static const char* kFmtSeconds   = "seconds";
 static const char* kFmtElapsed   = "elapsed";
 static const char* kFmtTimeOfDay = "time_of_day";
 
-std::string Preferences::defaultPath() {
-  const char* xdg = std::getenv("XDG_CONFIG_HOME");
-  std::string base = xdg ? xdg : (std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") +
-                                   "/.config");
-  return base + "/log_view/preferences.yaml";
+std::string Preferences::workspaceDataDir(std::string* error) {
+  const char* cmake_prefix = std::getenv("CMAKE_PREFIX_PATH");
+  if (!cmake_prefix || cmake_prefix[0] == '\0') {
+    if (error) *error = "CMAKE_PREFIX_PATH not set";
+    return "";
+  }
+  std::istringstream ss(cmake_prefix);
+  std::string entry;
+  while (std::getline(ss, entry, ':')) {
+    if (entry.find("/opt/ros/") == 0) continue;
+    fs::path ws_dir = fs::path(entry).parent_path();
+    if (fs::is_directory(ws_dir)) {
+      return (ws_dir / ".log_view").string();
+    }
+  }
+  if (error) *error = "no catkin workspace sourced";
+  return "";
 }
 
 bool Preferences::load() {
-  std::string path = defaultPath();
+  workspace_dir = workspaceDataDir(&workspace_error);
+  if (workspace_dir.empty()) {
+    persist_logs = false;
+    persist_filters = false;
+    return false;
+  }
+
+  std::string path = workspace_dir + "/preferences.yaml";
 
   try {
     YAML::Node cfg = YAML::LoadFile(path);
@@ -121,8 +141,13 @@ bool Preferences::load() {
 }
 
 void Preferences::save() const {
-  std::string path = defaultPath();
-  fs::create_directories(fs::path(path).parent_path());
+  if (workspace_dir.empty()) return;
+  std::string path = workspace_dir + "/preferences.yaml";
+  try {
+    fs::create_directories(workspace_dir);
+  } catch (...) {
+    return;
+  }
 
   YAML::Emitter out;
   out << YAML::BeginMap;
