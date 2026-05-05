@@ -115,9 +115,9 @@ void HelpPanel::printKeybinding(const HelpText& help_text) {
     int line_start = help_text.key.length() + 4;
     int line_end = longest_key_ + 7;
 
-    wattron(window_, COLOR_PAIR(CP_GREY));
+    wattron(window_, kAttrGrey);
     mvwhline(window_, help_text.line, line_start, 0, line_end - line_start);
-    wattroff(window_, COLOR_PAIR(CP_GREY));
+    wattroff(window_, kAttrGrey);
 }
 
 }  // namespace log_view

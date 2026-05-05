@@ -263,9 +263,9 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
     if (static_cast<int>(text.size()) > w) {
       text.resize(w);
     }
-    wattron(window_, COLOR_PAIR(CP_GREY));
+    wattron(window_, kAttrGrey);
     mvwprintw(window_, row, 0, "%s", text.c_str());
-    wattroff(window_, COLOR_PAIR(CP_GREY));
+    wattroff(window_, kAttrGrey);
     return;
   }
 

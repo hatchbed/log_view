@@ -76,23 +76,23 @@ void PrefsPanel::refresh() {
   if (ts_focused) { wattron(window_, A_REVERSE); }
   mvwprintw(window_, 3, 5, "%-14s", fmt_str);
   if (ts_focused) { wattroff(window_, A_REVERSE); }
-  if (!ts_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!ts_focused) { wattron(window_, kAttrGrey); }
   mvwprintw(window_, 3, 20, "< >");
-  if (!ts_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+  if (!ts_focused) { wattroff(window_, kAttrGrey); }
 
   // --- Persist Filter Settings ---
-  if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!workspace_ok) { wattron(window_, kAttrGrey); }
   mvwprintw(window_, 5, 3, "Persist Filter Settings");
-  if (!workspace_ok) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+  if (!workspace_ok) { wattroff(window_, kAttrGrey); }
 
   if (workspace_ok) {
     std::string path = prefs_.workspace_dir + "/preferences.yaml";
     if (static_cast<int>(path.size()) > path_max) {
       path = "..." + path.substr(path.size() - (path_max - 3));
     }
-    wattron(window_, COLOR_PAIR(CP_GREY));
+    wattron(window_, kAttrGrey);
     mvwprintw(window_, 6, 3, "%-*s", path_max, path.c_str());
-    wattroff(window_, COLOR_PAIR(CP_GREY));
+    wattroff(window_, kAttrGrey);
   } else {
     wattron(window_, COLOR_PAIR(CP_YELLOW));
     std::string msg = prefs_.workspace_error;
@@ -102,27 +102,27 @@ void PrefsPanel::refresh() {
   }
 
   bool pf_focused = workspace_ok && (selected_ == kFieldPersist);
-  if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!workspace_ok) { wattron(window_, kAttrGrey); }
   if (pf_focused) { wattron(window_, A_REVERSE); }
   mvwprintw(window_, 7, 5, "%-14s", pending_.persist_filters ? "yes" : "no");
   if (pf_focused) { wattroff(window_, A_REVERSE); }
-  if (!pf_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!pf_focused) { wattron(window_, kAttrGrey); }
   mvwprintw(window_, 7, 20, "< >");
-  if (!workspace_ok || !pf_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+  if (!workspace_ok || !pf_focused) { wattroff(window_, kAttrGrey); }
 
   // --- Persist Logs to Disk ---
-  if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!workspace_ok) { wattron(window_, kAttrGrey); }
   mvwprintw(window_, 9, 3, "Persist Logs to Disk");
-  if (!workspace_ok) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+  if (!workspace_ok) { wattroff(window_, kAttrGrey); }
 
   if (workspace_ok) {
     std::string path = prefs_.workspace_dir + "/";
     if (static_cast<int>(path.size()) > path_max) {
       path = "..." + path.substr(path.size() - (path_max - 3));
     }
-    wattron(window_, COLOR_PAIR(CP_GREY));
+    wattron(window_, kAttrGrey);
     mvwprintw(window_, 10, 3, "%-*s", path_max, path.c_str());
-    wattroff(window_, COLOR_PAIR(CP_GREY));
+    wattroff(window_, kAttrGrey);
   } else {
     wattron(window_, COLOR_PAIR(CP_YELLOW));
     std::string msg = prefs_.workspace_error;
@@ -132,58 +132,58 @@ void PrefsPanel::refresh() {
   }
 
   bool pl_focused = workspace_ok && (selected_ == kFieldPersistLogs);
-  if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!workspace_ok) { wattron(window_, kAttrGrey); }
   if (pl_focused) { wattron(window_, A_REVERSE); }
   mvwprintw(window_, 11, 5, "%-14s", pending_.persist_logs ? "yes" : "no");
   if (pl_focused) { wattroff(window_, A_REVERSE); }
-  if (!pl_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!pl_focused) { wattron(window_, kAttrGrey); }
   mvwprintw(window_, 11, 20, "< >");
-  if (!workspace_ok || !pl_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+  if (!workspace_ok || !pl_focused) { wattroff(window_, kAttrGrey); }
 
   // --- Log Rotate Size ---
   bool size_enabled = workspace_ok && pending_.persist_logs;
   bool rs_focused = size_enabled && (selected_ == kFieldRotateSize);
   std::string rotate_str = formatSize(pending_.log_rotate_size);
 
-  if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!size_enabled) { wattron(window_, kAttrGrey); }
   mvwprintw(window_, 13, 3, "Log Rotate Size");
-  if (!size_enabled) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+  if (!size_enabled) { wattroff(window_, kAttrGrey); }
 
   if (rs_focused) {
     wattron(window_, A_REVERSE);
   } else if (!size_enabled) {
-    wattron(window_, COLOR_PAIR(CP_GREY));
+    wattron(window_, kAttrGrey);
   }
   mvwprintw(window_, 14, 5, "%-14s", rotate_str.c_str());
   if (rs_focused) { wattroff(window_, A_REVERSE); }
-  if (!rs_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!rs_focused) { wattron(window_, kAttrGrey); }
   mvwprintw(window_, 14, 20, "< >");
-  if (!rs_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+  if (!rs_focused) { wattroff(window_, kAttrGrey); }
 
   // --- Max Total Log Size ---
   bool ms_focused = size_enabled && (selected_ == kFieldMaxSize);
   std::string max_str = formatSize(pending_.log_max_size);
 
-  if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!size_enabled) { wattron(window_, kAttrGrey); }
   mvwprintw(window_, 16, 3, "Max Total Log Size");
-  if (!size_enabled) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+  if (!size_enabled) { wattroff(window_, kAttrGrey); }
 
   if (ms_focused) {
     wattron(window_, A_REVERSE);
   } else if (!size_enabled) {
-    wattron(window_, COLOR_PAIR(CP_GREY));
+    wattron(window_, kAttrGrey);
   }
   mvwprintw(window_, 17, 5, "%-14s", max_str.c_str());
   if (ms_focused) { wattroff(window_, A_REVERSE); }
-  if (!ms_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
+  if (!ms_focused) { wattron(window_, kAttrGrey); }
   mvwprintw(window_, 17, 20, "< >");
-  if (!ms_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+  if (!ms_focused) { wattroff(window_, kAttrGrey); }
 
   // --- Controls hint ---
-  wattron(window_, COLOR_PAIR(CP_GREY));
+  wattron(window_, kAttrGrey);
   mvwprintw(window_, height_ - 3, 3, "Up/Dn: select   Space/</>: change");
   mvwprintw(window_, height_ - 2, 3, "Enter: save          Esc: cancel");
-  wattroff(window_, COLOR_PAIR(CP_GREY));
+  wattroff(window_, kAttrGrey);
 }
 
 bool PrefsPanel::handleKey(int key) {
