@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.1.4 (2026-05-05)
+------------------
 * Scope log and preference storage to the active catkin workspace via ``CMAKE_PREFIX_PATH`` (stored under ``<workspace>/.log_view/``).
 * Show file paths in preferences panel; display a warning when persistence is unavailable.
 * Persist logs to disk with configurable rotation and max size.
