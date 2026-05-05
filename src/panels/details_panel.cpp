@@ -31,6 +31,7 @@
 #include <string>
 
 #include <rcl_interfaces/msg/log.hpp>
+#include <log_view/datatypes.h>
 #include <log_view/utils.h>
 
 namespace log_view {
@@ -58,7 +59,15 @@ void DetailsPanel::refresh() {
     return row;
   };
 
-  if (selected < 0) {
+  const LogEntry* entry_ptr = nullptr;
+  if (selected >= 0) {
+    const auto& e = filter_.getEntry(selected);
+    if (e.node != kMarkerNode) {
+      entry_ptr = &e;
+    }
+  }
+
+  if (!entry_ptr) {
     mvwprintw(window_, 1, 1, "stamp: ");
     mvwprintw(window_, 2, 1, "level: ");
     mvwprintw(window_, 3, 1, "file: ");
@@ -66,7 +75,7 @@ void DetailsPanel::refresh() {
     mvwprintw(window_, 5, 1, "line: ");
     mvwprintw(window_, 6, 1, "message: ");
   } else {
-    const auto& entry = filter_.getEntry(selected);
+    const auto& entry = *entry_ptr;
 
     int row = 1;
     row = printWrapped(row, "stamp: " + toString(entry.stamp.seconds(), 4));

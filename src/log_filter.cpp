@@ -114,6 +114,13 @@ void LogFilter::setEnableNodeFilter(bool enable) {
   }
 }
 
+void LogFilter::setShowSessionBoundaries(bool enable) {
+  if (show_session_boundaries_ != enable) {
+    show_session_boundaries_ = enable;
+    reset();
+  }
+}
+
 void LogFilter::toggleNode(const std::string& node) {
   auto element = nodes_.find(node);
   if (element != nodes_.end()) {
@@ -348,6 +355,10 @@ void LogFilter::clearSearch() {
 }
 
 bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
+  if (entry.node == kMarkerNode) {
+    return show_session_boundaries_;
+  }
+
   bool include = filter_list_.empty();
 
   auto node = nodes_.find(entry.node);

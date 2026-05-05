@@ -134,7 +134,7 @@ void LogView::init() {
   {
     int pw = prefsPanelWidth();
     prefs_panel_ = std::make_shared<PrefsPanel>(
-      23, pw, std::max(0, LINES / 2 - 11), std::max(0, COLS / 2 - pw / 2), prefs_);
+      25, pw, std::max(0, LINES / 2 - 12), std::max(0, COLS / 2 - pw / 2), prefs_);
   }
   prefs_panel_->hide(true);
   prefs_panel_->setOnSave([this]() {
@@ -155,9 +155,12 @@ void LogView::init() {
       logs_->setWriter(log_writer_.get());
       log_writer_->start();
     }
+    log_filter_.setShowSessionBoundaries(prefs_.show_session_boundaries);
     log_panel_->forceRefresh();
   });
   panels_.push_back(prefs_panel_);
+
+  log_filter_.setShowSessionBoundaries(prefs_.show_session_boundaries);
 
   if (prefs_.persist_filters) {
     log_filter_.setDebugLevel(prefs_.filters.debug);
@@ -450,7 +453,7 @@ void LogView::refreshLayout() {
     COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
   help_panel_->resize(24, COLS - 8, 2, 4);
   int pw = prefsPanelWidth();
-  prefs_panel_->resize(23, pw, std::max(0, LINES / 2 - 11), std::max(0, COLS / 2 - pw / 2));
+  prefs_panel_->resize(25, pw, std::max(0, LINES / 2 - 12), std::max(0, COLS / 2 - pw / 2));
 }
 
 int LogView::prefsPanelWidth() const {

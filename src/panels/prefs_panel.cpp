@@ -179,6 +179,16 @@ void PrefsPanel::refresh() {
   mvwprintw(window_, 17, 20, "< >");
   if (!ms_focused) { wattroff(window_, kAttrGrey); }
 
+  // --- Show Session Boundaries ---
+  bool sb_focused = (selected_ == kFieldSessionBound);
+  mvwprintw(window_, 19, 3, "Show Session Boundaries");
+  if (sb_focused) { wattron(window_, A_REVERSE); }
+  mvwprintw(window_, 20, 5, "%-14s", pending_.show_session_boundaries ? "yes" : "no");
+  if (sb_focused) { wattroff(window_, A_REVERSE); }
+  if (!sb_focused) { wattron(window_, kAttrGrey); }
+  mvwprintw(window_, 20, 20, "< >");
+  if (!sb_focused) { wattroff(window_, kAttrGrey); }
+
   // --- Controls hint ---
   wattron(window_, kAttrGrey);
   mvwprintw(window_, height_ - 3, 3, "Up/Dn: select   Space/</>: change");
@@ -227,6 +237,8 @@ bool PrefsPanel::handleKey(int key) {
       cycleRotateSize(-1);
     } else if (selected_ == kFieldMaxSize) {
       cycleMaxSize(-1);
+    } else if (selected_ == kFieldSessionBound) {
+      pending_.show_session_boundaries = !pending_.show_session_boundaries;
     }
   } else if (key == KEY_RIGHT || key == ' ') {
     if (selected_ == kFieldTimestamp) {
@@ -242,6 +254,8 @@ bool PrefsPanel::handleKey(int key) {
       cycleRotateSize(1);
     } else if (selected_ == kFieldMaxSize) {
       cycleMaxSize(1);
+    } else if (selected_ == kFieldSessionBound) {
+      pending_.show_session_boundaries = !pending_.show_session_boundaries;
     }
   }
 
