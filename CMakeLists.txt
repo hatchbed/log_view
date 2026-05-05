@@ -8,8 +8,9 @@ find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 set(CURSES_NEED_NCURSES TRUE)
+set(CURSES_NEED_WIDE TRUE)
 find_package(Curses REQUIRED)
-find_library(CURSES_PANEL_LIBRARY NAMES panel)
+find_library(CURSES_PANEL_LIBRARY NAMES panelw panel)
 
 ###########
 ## Build ##
