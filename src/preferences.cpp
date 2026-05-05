@@ -90,6 +90,9 @@ bool Preferences::load() {
     if (cfg["persist_logs"]) {
       persist_logs = cfg["persist_logs"].as<bool>();
     }
+    if (cfg["show_session_boundaries"]) {
+      show_session_boundaries = cfg["show_session_boundaries"].as<bool>();
+    }
     if (cfg["log_rotate_size"]) {
       log_rotate_size = cfg["log_rotate_size"].as<size_t>();
     }
@@ -155,8 +158,9 @@ void Preferences::save() const {
       break;
   }
 
-  out << YAML::Key << "persist_filters" << YAML::Value << persist_filters;
-  out << YAML::Key << "persist_logs"    << YAML::Value << persist_logs;
+  out << YAML::Key << "persist_filters"        << YAML::Value << persist_filters;
+  out << YAML::Key << "persist_logs"           << YAML::Value << persist_logs;
+  out << YAML::Key << "show_session_boundaries" << YAML::Value << show_session_boundaries;
   out << YAML::Key << "log_rotate_size" << YAML::Value << log_rotate_size;
   out << YAML::Key << "log_max_size"    << YAML::Value << log_max_size;
 

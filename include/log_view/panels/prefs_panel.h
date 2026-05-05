@@ -64,12 +64,13 @@ private:
   int selected_ = 0;
   std::function<void()> on_save_;
 
-  static constexpr int kNumFields       = 5;
-  static constexpr int kFieldTimestamp  = 0;
-  static constexpr int kFieldPersist    = 1;
-  static constexpr int kFieldPersistLogs = 2;
-  static constexpr int kFieldRotateSize = 3;
-  static constexpr int kFieldMaxSize    = 4;
+  static constexpr int kNumFields            = 6;
+  static constexpr int kFieldTimestamp       = 0;
+  static constexpr int kFieldPersist         = 1;
+  static constexpr int kFieldPersistLogs     = 2;
+  static constexpr int kFieldRotateSize      = 3;
+  static constexpr int kFieldMaxSize         = 4;
+  static constexpr int kFieldSessionBound    = 5;
 
   static constexpr size_t kRotateSizePresets[] = {
     1ul * 1024 * 1024,

@@ -41,6 +41,7 @@ struct Preferences {
   };
 
   TimestampFormat timestamp_format = TimestampFormat::SECONDS;
+  bool show_session_boundaries = true;
   bool persist_filters = false;
   bool persist_logs = false;
   size_t log_rotate_size = 10 * 1024 * 1024;   // 10 MB
