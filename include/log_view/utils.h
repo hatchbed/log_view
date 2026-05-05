@@ -35,7 +35,18 @@
 
 namespace log_view {
 
-enum Color { CP_DEFAULT, CP_RED, CP_YELLOW, CP_GREY, CP_DEFAULT_CYAN, CP_DEFAULT_GREY };
+enum Color {
+  CP_DEFAULT, CP_RED, CP_YELLOW, CP_GREY, CP_DEFAULT_CYAN, CP_DEFAULT_GREY,
+  CP_ANSI_BLACK, CP_ANSI_RED, CP_ANSI_GREEN, CP_ANSI_YELLOW,
+  CP_ANSI_BLUE, CP_ANSI_MAGENTA, CP_ANSI_CYAN, CP_ANSI_WHITE
+};
+
+struct AnsiSegment {
+  std::string text;
+  int ansi_fg = -1;  // -1 = default, 0-7 = ANSI standard color index
+  bool bold = false;
+  bool dim  = false;
+};
 
 std::string toString(double val, int precision);
 
@@ -49,5 +60,8 @@ std::vector<size_t> find(
   const std::string& text, const std::string& substr, bool case_insensitive);
 
 void toClipboard(const std::string& text);
+
+std::string stripAnsi(const std::string& raw);
+std::vector<AnsiSegment> parseAnsiSegments(const std::string& raw);
 
 }  // namespace log_view
