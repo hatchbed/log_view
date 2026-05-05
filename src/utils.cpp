@@ -162,8 +162,11 @@ std::string stripAnsi(const std::string& raw) {
   enum { NORMAL, ESC, CSI } state = NORMAL;
   for (char c : raw) {
     if (state == NORMAL) {
-      if (c == '\033') { state = ESC; }
-      else { out += c; }
+      if (c == '\033') {
+        state = ESC;
+      } else {
+        out += c;
+      }
     } else if (state == ESC) {
       state = (c == '[') ? CSI : NORMAL;
     } else {  // CSI
