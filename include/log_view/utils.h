@@ -33,6 +33,8 @@
 #include <string>
 #include <vector>
 
+#include <curses.h>
+
 namespace log_view {
 
 enum Color {
@@ -63,5 +65,8 @@ void toClipboard(const std::string& text);
 
 std::string stripAnsi(const std::string& raw);
 std::vector<AnsiSegment> parseAnsiSegments(const std::string& raw);
+
+extern attr_t kAttrGrey;    // replaces COLOR_PAIR(CP_GREY)   — dim on 8-color terminals
+extern attr_t kAttrGreyBg;  // replaces COLOR_PAIR(CP_DEFAULT_GREY) — reverse on 8-color terminals
 
 }  // namespace log_view

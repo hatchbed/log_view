@@ -40,7 +40,7 @@ void LevelPanel::refresh() {
   mvwprintw(window_, 0, width_ - 17, "CTRL+h: view help");
   wattroff(window_, A_REVERSE);
 
-  wattron(window_, COLOR_PAIR(CP_DEFAULT_GREY));
+  wattron(window_, kAttrGreyBg);
   if (!filter_.getDebugLevel()) {
     mvwprintw(window_, 0, 0, " debug ");
   }
@@ -59,7 +59,7 @@ void LevelPanel::refresh() {
   if (filter_.getNodeFilterActive()) {
     mvwprintw(window_, 0, 37, " all nodes ");
   }
-  wattroff(window_, COLOR_PAIR(CP_DEFAULT_GREY));
+  wattroff(window_, kAttrGreyBg);
 }
 
 bool LevelPanel::handleMouse(const MEVENT& event) {

@@ -32,7 +32,7 @@ namespace log_view {
 
 void SearchPanel::refresh() {
   if (show_results_) {
-    wattron(window_, COLOR_PAIR(CP_DEFAULT_GREY));
+    wattron(window_, kAttrGreyBg);
     std::string background(width_, ' ');
     mvwprintw(window_, 0, 0, "%s", background.c_str());
     std::string text = "match: " + filter_.getSearch();
@@ -43,7 +43,7 @@ void SearchPanel::refresh() {
         mvwprintw(window_, 0, width_ - help.length(), "%s", help.c_str());
     }
 
-    wattroff(window_, COLOR_PAIR(CP_DEFAULT_GREY));
+    wattroff(window_, kAttrGreyBg);
   } else {
     mvwprintw(window_, 0, 0, "search: %s", input_text_.c_str());
   }
