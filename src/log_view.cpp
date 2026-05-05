@@ -76,6 +76,14 @@ void LogView::init() {
   init_pair(CP_GREY, 8, -1);
   init_pair(CP_DEFAULT_CYAN, -1, COLOR_CYAN);
   init_pair(CP_DEFAULT_GREY, -1, 8);
+  init_pair(CP_ANSI_BLACK,   COLOR_BLACK,   -1);
+  init_pair(CP_ANSI_RED,     COLOR_RED,     -1);
+  init_pair(CP_ANSI_GREEN,   COLOR_GREEN,   -1);
+  init_pair(CP_ANSI_YELLOW,  COLOR_YELLOW,  -1);
+  init_pair(CP_ANSI_BLUE,    COLOR_BLUE,    -1);
+  init_pair(CP_ANSI_MAGENTA, COLOR_MAGENTA, -1);
+  init_pair(CP_ANSI_CYAN,    COLOR_CYAN,    -1);
+  init_pair(CP_ANSI_WHITE,   COLOR_WHITE,   -1);
   noecho();
   curs_set(0);
   raw();

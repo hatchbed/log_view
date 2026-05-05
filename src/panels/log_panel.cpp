@@ -294,7 +294,10 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
   }
 
   std::string prefix = getPrefix(entry, line);
-  std::string text = prefix + entry.text[line];
+  const std::string& raw_line = entry.text[line];
+  std::string stripped_line = raw_line.find('\033') != std::string::npos
+    ? stripAnsi(raw_line) : raw_line;
+  std::string text = prefix + stripped_line;
   max_length_ = std::max(max_length_, text.size());
 
   std::string match = filter_.getSearch();
@@ -302,7 +305,7 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
   std::vector<size_t> match_indices;
   bool matched = false;
   if (!match.empty()) {
-    match_indices = find(entry.text[line], match, true);
+    match_indices = find(stripped_line, match, true);
     matched = !match_indices.empty();
   }
 
@@ -316,6 +319,39 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
   }
 
   mvwprintw(window_, row, 0, "%s", text.c_str());
+
+  // ANSI color/bold overlay pass
+  if (raw_line.find('\033') != std::string::npos) {
+    static const int kAnsiPairs[] = {
+      CP_ANSI_BLACK, CP_ANSI_RED,  CP_ANSI_GREEN,   CP_ANSI_YELLOW,
+      CP_ANSI_BLUE,  CP_ANSI_MAGENTA, CP_ANSI_CYAN, CP_ANSI_WHITE
+    };
+    size_t vis_col = prefix.length();  // visible column of current segment start
+    for (const auto& seg : parseAnsiSegments(raw_line)) {
+      size_t seg_end = vis_col + seg.text.size();
+      bool has_color = seg.ansi_fg >= 0 && seg.ansi_fg <= 7;
+      bool has_attr  = has_color || seg.bold || seg.dim;
+      if (has_attr && !seg.text.empty()) {
+        int64_t scr_start = static_cast<int64_t>(vis_col) - static_cast<int64_t>(shift_);
+        int64_t scr_end   = static_cast<int64_t>(seg_end) - static_cast<int64_t>(shift_);
+        if (scr_start < static_cast<int64_t>(width_) && scr_end > 0) {
+          int64_t clip_start = std::max(static_cast<int64_t>(0), scr_start);
+          int64_t clip_end   = std::min(static_cast<int64_t>(width_), scr_end);
+          size_t  txt_offset = static_cast<size_t>(clip_start - scr_start);
+          size_t  txt_len    = static_cast<size_t>(clip_end - clip_start);
+          if (has_color) { wattron(window_, COLOR_PAIR(kAnsiPairs[seg.ansi_fg])); }
+          if (seg.bold)  { wattron(window_, A_BOLD); }
+          if (seg.dim)   { wattron(window_, A_DIM);  }
+          mvwprintw(window_, row, static_cast<int>(clip_start),
+            "%.*s", static_cast<int>(txt_len), seg.text.c_str() + txt_offset);
+          if (seg.dim)   { wattroff(window_, A_DIM);  }
+          if (seg.bold)  { wattroff(window_, A_BOLD); }
+          if (has_color) { wattroff(window_, COLOR_PAIR(kAnsiPairs[seg.ansi_fg])); }
+        }
+      }
+      vis_col = seg_end;
+    }
+  }
 
   if (matched) {
     wattron(window_, COLOR_PAIR(CP_DEFAULT_CYAN));
