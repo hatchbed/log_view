@@ -2,6 +2,12 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Added support for UTF8 glyphs in log messages.
+* Added support for ANSI color codes in log messages.
+* Fixed display for terminals limited to 8 colors.
+
 0.3.2 (2026-05-04)
 ------------------
 * Scope log and preference storage to the active ROS 2 workspace via ``COLCON_PREFIX_PATH`` (stored under ``<workspace>/.log_view/``).
