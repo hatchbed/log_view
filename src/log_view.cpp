@@ -41,6 +41,10 @@ LogView::LogView(LogStorePtr& logs) :
   log_filter_(logs_)
 {}
 
+void LogView::setOfflineMode(bool offline) {
+  offline_mode_ = offline;
+}
+
 LogView::~LogView() {
   close();
 }
@@ -48,17 +52,17 @@ LogView::~LogView() {
 void LogView::init() {
   prefs_.load();
 
-  if (prefs_.persist_logs) {
-    log_writer_ = std::make_unique<LogWriter>(
-      prefs_.workspace_dir, prefs_.log_rotate_size, prefs_.log_max_size);
-    for (const auto& entry : log_writer_->loadAll()) {
-      logs_->addEntry(entry);
+  if (!offline_mode_) {
+    if (prefs_.persist_logs) {
+      log_writer_ = std::make_unique<LogWriter>(
+        prefs_.workspace_dir, prefs_.log_rotate_size, prefs_.log_max_size);
+      for (const auto& entry : log_writer_->loadAll()) {
+        logs_->addEntry(entry);
+      }
+      logs_->setWriter(log_writer_.get());
+      log_writer_->start();
     }
-    logs_->setWriter(log_writer_.get());
-    log_writer_->start();
-  }
 
-  {
     auto marker = makeMarkerEntry("Session Started At");
     logs_->addEntry(marker);
     if (log_writer_) {

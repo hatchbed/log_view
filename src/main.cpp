@@ -29,8 +29,11 @@
 #include <csignal>
 
 #include <chrono>
+#include <string>
 #include <thread>
+#include <vector>
 
+#include <log_view/bag_loader.h>
 #include <log_view/log_store.h>
 #include <log_view/log_view.h>
 #include <rcl_interfaces/msg/log.hpp>
@@ -50,11 +53,24 @@ class LogViewer : public rclcpp::Node {
     view_(logs_)
   {}
 
+  void setBagMode(const std::vector<std::string>& bags) {
+    bag_files_ = bags;
+    view_.setOfflineMode(true);
+  }
+
   void run() {
     rclcpp::Clock system_clock;
+
+    if (!bag_files_.empty()) {
+      log_view::loadBagFiles(bag_files_, logs_);
+    }
+
     view_.init();
-    sub_ = create_subscription<rcl_interfaces::msg::Log>(
-      "/rosout", 10000, std::bind(&LogViewer::handleMsg, this, std::placeholders::_1));
+
+    if (bag_files_.empty()) {
+      sub_ = create_subscription<rcl_interfaces::msg::Log>(
+        "/rosout", 10000, std::bind(&LogViewer::handleMsg, this, std::placeholders::_1));
+    }
 
     std::thread ros_thread([&](){ rclcpp::spin(get_node_base_interface()); });
 
@@ -65,6 +81,7 @@ class LogViewer : public rclcpp::Node {
       std::this_thread::sleep_for(30ms);
     }
     view_.close();
+    rclcpp::shutdown();
     ros_thread.join();
   }
 
@@ -74,6 +91,7 @@ class LogViewer : public rclcpp::Node {
 
   private:
     rclcpp::Subscription<rcl_interfaces::msg::Log>::SharedPtr sub_;
+    std::vector<std::string> bag_files_;
 
     log_view::LogStorePtr logs_;
     log_view::LogView view_;
@@ -95,7 +113,13 @@ int main(int argc, char ** argv)
   rclcpp::init(argc, argv);
   signal(SIGINT, handleSigint);
 
+  auto non_ros_args = rclcpp::remove_ros_arguments(argc, argv);
+  std::vector<std::string> bag_paths(non_ros_args.begin() + 1, non_ros_args.end());
+
   LogViewer log_viewer;
+  if (!bag_paths.empty()) {
+    log_viewer.setBagMode(bag_paths);
+  }
   log_viewer.run();
 
   exit(0);

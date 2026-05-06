@@ -64,6 +64,8 @@ public:
 
   bool exited() const;
 
+  void setOfflineMode(bool offline);
+
   void setRosTime(const rclcpp::Time& time);
   void setSystemTime(const rclcpp::Time& time);
 
@@ -87,6 +89,7 @@ private:
   std::unique_ptr<LogWriter> log_writer_;
 
   bool exited_ = false;
+  bool offline_mode_ = false;
   bool mouse_down_ = false;
   bool confirm_clear_ = false;
 

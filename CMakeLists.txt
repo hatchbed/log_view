@@ -4,6 +4,7 @@ project(log_view)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcl_interfaces REQUIRED)
+find_package(rosbag2_cpp REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
@@ -47,8 +48,8 @@ target_link_libraries(${PROJECT_NAME}
   yaml-cpp
 )
 
-add_executable(log_viewer src/main.cpp)
-target_link_libraries(log_viewer ${PROJECT_NAME})
+add_executable(log_viewer src/main.cpp src/bag_loader.cpp)
+target_link_libraries(log_viewer ${PROJECT_NAME} rosbag2_cpp::rosbag2_cpp)
 
 #############
 ## Install ##

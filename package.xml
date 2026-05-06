@@ -19,6 +19,7 @@
 
   <depend>rclcpp</depend>
   <depend>rcl_interfaces</depend>
+  <depend>rosbag2_cpp</depend>
   <depend>libncurses-dev</depend>
   <depend>yaml_cpp_vendor</depend>
 
