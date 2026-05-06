@@ -36,6 +36,34 @@
 
 namespace log_view {
 
+static int countWrappedRows(const std::string& text, int max_width) {
+  if (max_width <= 1) { return 1; }
+  int rows = 1;
+  int offset = max_width;
+  while (offset < static_cast<int>(text.size())) {
+    rows++;
+    offset += max_width - 2;
+  }
+  return rows;
+}
+
+bool DetailsPanel::handleNavigation(int key) {
+  if (hidden_) { return false; }
+
+  int view_height  = getContentHeight();
+  int content_size = static_cast<int>(getContentSize());
+
+  if (content_size <= view_height) { return false; }
+
+  bool scroll_up   = (key == KEY_UP   || key == KEY_PPAGE || key == KEY_HOME);
+  bool scroll_down = (key == KEY_DOWN || key == KEY_NPAGE || key == KEY_END);
+
+  if (scroll_up   && cursor_ >= 0 && cursor_ <= static_cast<int64_t>(view_height)) { return false; }
+  if (scroll_down && cursor_ < 0) { return false; }
+
+  return PanelInterface::handleNavigation(key);
+}
+
 void DetailsPanel::refresh() {
   max_length_ = 0;
   if (!cleared_) {
@@ -43,18 +71,88 @@ void DetailsPanel::refresh() {
   }
   cleared_ = false;
 
+  int64_t selected = filter_.getSelectEnd();
+
+  const LogEntry* entry_ptr = nullptr;
+  if (selected >= 0) {
+    const auto& e = filter_.getEntry(selected);
+    if (e.node != kMarkerNode) {
+      entry_ptr = &e;
+    }
+  }
+
+  // Build level text early — needed for both content-size counting and rendering.
+  std::string level_text;
+  if (entry_ptr) {
+    level_text = "level: ";
+    uint8_t lvl = entry_ptr->level;
+    if      (lvl == rcl_interfaces::msg::Log::DEBUG) { level_text += "DEBUG"; }
+    else if (lvl == rcl_interfaces::msg::Log::INFO)  { level_text += "INFO";  }
+    else if (lvl == rcl_interfaces::msg::Log::WARN)  { level_text += "WARN";  }
+    else if (lvl == rcl_interfaces::msg::Log::ERROR) { level_text += "ERROR"; }
+    else if (lvl == rcl_interfaces::msg::Log::FATAL) { level_text += "FATAL"; }
+    else                                             { level_text += std::to_string(lvl); }
+  }
+
+  // Compute the total number of content rows for the current entry at a given width.
+  int view_height = getContentHeight();
+  auto computeSize = [&](int max_w) -> size_t {
+    if (!entry_ptr) { return 6; }
+    const auto& entry = *entry_ptr;
+    int row = 1;
+    row += countWrappedRows("stamp: " + toString(entry.stamp.seconds(), 4), max_w);
+    row += countWrappedRows(level_text, max_w);
+    row += countWrappedRows("file: " + entry.file, max_w);
+    row += countWrappedRows("function: " + entry.function, max_w);
+    row += countWrappedRows("line: " + std::to_string(entry.line), max_w);
+    row++;  // "message: " label
+    for (const auto& line : entry.text) {
+      const std::string& disp =
+        (line.find('\033') != std::string::npos) ? stripAnsi(line) : line;
+      row += countWrappedRows(disp, max_w);
+    }
+    return static_cast<size_t>(row - 1);
+  };
+
+  content_size_ = computeSize(width_ - 2);
+
+  // Reset scroll to top when the selected entry changes.
+  if (selected != last_selected_) {
+    last_selected_ = selected;
+    cursor_ = static_cast<int64_t>(view_height);
+  }
+
+  // Compute how many rows of content are above the visible area.
+  int scroll_top = 0;
+  if (static_cast<int>(content_size_) > view_height) {
+    scroll_top = (cursor_ < 0)
+      ? static_cast<int>(content_size_) - view_height
+      : static_cast<int>(cursor_) - view_height;
+    scroll_top = std::max(0, scroll_top);
+  }
+
   box(window_, 0, 0);
   mvwprintw(window_, 0, width_ / 2 - 3, " details ");
 
-  int64_t selected = filter_.getSelectEnd();
-
   int max_width = getContentWidth();
+
+  // Renders `text` starting at logical row `row`, clipping rows outside the viewport.
   auto printWrapped = [&](int row, const std::string& text) -> int {
-    mvwaddnstr(window_, row++, 1, text.c_str(), max_width);
-    size_t offset = max_width;
+    {
+      int dr = row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwaddnstr(window_, dr, 1, text.c_str(), max_width);
+      }
+    }
+    row++;
+    size_t offset = static_cast<size_t>(max_width);
     while (offset < text.size()) {
-      mvwaddnstr(window_, row++, 3, text.c_str() + offset, max_width - 2);
-      offset += max_width - 2;
+      int dr = row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwaddnstr(window_, dr, 3, text.c_str() + offset, max_width - 2);
+      }
+      row++;
+      offset += static_cast<size_t>(max_width - 2);
     }
     return row;
   };
@@ -69,17 +167,25 @@ void DetailsPanel::refresh() {
     bool has_ansi = raw.find('\033') != std::string::npos;
     const std::string& display = has_ansi ? stripAnsi(raw) : raw;
 
-    // First pass: layout with stripped text
+    // First pass: layout with stripped text (clipped to viewport).
     int last_row = row;
-    mvwaddnstr(window_, last_row, 1, display.c_str(), max_width);
+    {
+      int dr = last_row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwaddnstr(window_, dr, 1, display.c_str(), max_width);
+      }
+    }
     size_t offset = static_cast<size_t>(max_width);
     while (offset < display.size()) {
       last_row++;
-      mvwaddnstr(window_, last_row, 3, display.c_str() + offset, max_width - 2);
+      int dr = last_row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwaddnstr(window_, dr, 3, display.c_str() + offset, max_width - 2);
+      }
       offset += static_cast<size_t>(max_width - 2);
     }
 
-    // Second pass: ANSI color overlay
+    // Second pass: ANSI color overlay (clipped to viewport).
     if (has_ansi) {
       int cur_row = row;
       int col_off = 1;
@@ -100,11 +206,12 @@ void DetailsPanel::refresh() {
             space   = row_cap;
           }
           size_t chunk = std::min(remaining, static_cast<size_t>(space));
-          if (has_attr) {
+          int dr = cur_row - scroll_top;
+          if (has_attr && dr >= 1 && dr <= height_ - 2) {
             if (has_color) { wattron(window_, COLOR_PAIR(kAnsiPairs[seg.ansi_fg])); }
             if (seg.bold)  { wattron(window_, A_BOLD); }
             if (seg.dim)   { wattron(window_, A_DIM); }
-            mvwprintw(window_, cur_row, col_off + vis_col,
+            mvwprintw(window_, dr, col_off + vis_col,
               "%.*s", static_cast<int>(chunk), seg.text.c_str() + seg_off);
             if (seg.dim)   { wattroff(window_, A_DIM); }
             if (seg.bold)  { wattroff(window_, A_BOLD); }
@@ -120,60 +227,39 @@ void DetailsPanel::refresh() {
     return last_row + 1;
   };
 
-  const LogEntry* entry_ptr = nullptr;
-  if (selected >= 0) {
-    const auto& e = filter_.getEntry(selected);
-    if (e.node != kMarkerNode) {
-      entry_ptr = &e;
-    }
-  }
-
   if (!entry_ptr) {
-    mvwprintw(window_, 1, 1, "stamp: ");
-    mvwprintw(window_, 2, 1, "level: ");
-    mvwprintw(window_, 3, 1, "file: ");
-    mvwprintw(window_, 4, 1, "function: ");
-    mvwprintw(window_, 5, 1, "line: ");
-    mvwprintw(window_, 6, 1, "message: ");
+    const char* labels[] = {"stamp: ", "level: ", "file: ", "function: ", "line: ", "message: "};
+    for (int i = 0; i < 6; i++) {
+      int dr = (i + 1) - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwprintw(window_, dr, 1, "%s", labels[i]);
+      }
+    }
   } else {
     const auto& entry = *entry_ptr;
-
     int row = 1;
     row = printWrapped(row, "stamp: " + toString(entry.stamp.seconds(), 4));
-
-    std::string level_text = "level: ";
-    if (entry.level == rcl_interfaces::msg::Log::DEBUG) {
-      level_text += "DEBUG";
-    } else if (entry.level == rcl_interfaces::msg::Log::INFO) {
-      level_text += "INFO";
-    } else if (entry.level == rcl_interfaces::msg::Log::WARN) {
-      level_text += "WARN";
-    } else if (entry.level == rcl_interfaces::msg::Log::ERROR) {
-      level_text += "ERROR";
-    } else if (entry.level == rcl_interfaces::msg::Log::FATAL) {
-      level_text += "FATAL";
-    } else {
-      level_text += std::to_string(entry.level);
-    }
     row = printWrapped(row, level_text);
     row = printWrapped(row, "file: " + entry.file);
     row = printWrapped(row, "function: " + entry.function);
     row = printWrapped(row, "line: " + std::to_string(entry.line));
-    mvwprintw(window_, row++, 1, "message: ");
+    {
+      int dr = row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwprintw(window_, dr, 1, "message: ");
+      }
+    }
+    row++;
     for (const auto& line : entry.text) {
       row = printWrappedAnsi(row, line);
     }
   }
 
-  drawScrollBar(getContentSize(), getContentHeight(), 1, width_ - 2);
+  drawScrollBar(content_size_, view_height, 1, width_ - 1);
 }
 
 int DetailsPanel::getContentWidth() const {
-  int width = width_ - 2;
-  if (getContentSize() > getContentHeight()) {
-    width--;
-  }
-  return width;
+  return width_ - 2;
 }
 
 }  // namespace log_view
