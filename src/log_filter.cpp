@@ -374,8 +374,11 @@ void LogFilter::removeAtIndex(size_t pos) {
 
   int64_t p = static_cast<int64_t>(pos);
   auto shift = [p](int64_t& val) {
-    if (val > p)       { val--; }
-    else if (val == p) { val = -1; }
+    if (val > p) {
+      val--;
+    } else if (val == p) {
+      val = -1;
+    }
   };
 
   shift(cursor_);
