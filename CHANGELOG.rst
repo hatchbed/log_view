@@ -8,6 +8,7 @@ Forthcoming
 * Added support for ANSI color codes in log messages.
 * Fixed display for terminals limited to 8 colors.
 * Fixed session boundaries to not be treated as normal log entries.
+* Fixed help panel to scroll vertically when insufficient space is available.
 
 0.3.2 (2026-05-04)
 ------------------
