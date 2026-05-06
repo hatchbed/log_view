@@ -124,7 +124,7 @@ void NodePanel::refresh() {
 
   last_cursor_ = cursor;
 
-  drawScrollBar(getContentSize(), getContentHeight(), 1, width_ - 2);
+  drawScrollBar(getContentSize(), getContentHeight(), 1, width_ - 1);
 }
 
 bool NodePanel::handleKey(int key) {
@@ -235,12 +235,34 @@ void NodePanel::moveTo(size_t index) {
   }
 }
 
-int NodePanel::getContentWidth() const {
-  int width = width_ - 2;
-  if (getContentSize() > getContentHeight()) {
-    width--;
+bool NodePanel::handleNavigation(int key) {
+  if (hidden_ || !focus()) { return false; }
+
+  int view_height  = getContentHeight();
+  int content_size = static_cast<int>(getContentSize());
+
+  if (content_size <= view_height) { return false; }
+
+  int64_t selection = 0;
+  int64_t idx = 0;
+  for (const auto& node : filter_.nodes()) {
+    if (node.first == selected_) {
+      selection = idx;
+    }
+    idx++;
   }
-  return width;
+
+  bool scroll_up   = (key == KEY_UP   || key == KEY_PPAGE || key == KEY_HOME);
+  bool scroll_down = (key == KEY_DOWN || key == KEY_NPAGE || key == KEY_END);
+
+  if (scroll_up   && selection <= 0)                { return false; }
+  if (scroll_down && selection >= content_size - 1) { return false; }
+
+  return PanelInterface::handleNavigation(key);
+}
+
+int NodePanel::getContentWidth() const {
+  return width_ - 2;
 }
 
 void NodePanel::select() {

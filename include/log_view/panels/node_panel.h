@@ -42,6 +42,7 @@ class NodePanel : public PanelInterface {
   : PanelInterface(height, width, y, x), filter_(filter) {}
   virtual ~NodePanel() {}
   virtual void refresh();
+  virtual bool handleNavigation(int key);
   virtual bool handleMouse(const MEVENT& event);
   virtual bool handleKey(int key);
 
