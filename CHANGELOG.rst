@@ -10,6 +10,7 @@ Forthcoming
 * Fixed session boundaries to not be treated as normal log entries.
 * Fixed details panel to scroll vertically when insufficient space is available.
 * Fixed help panel to scroll vertically when insufficient space is available.
+* Fixed preference panel to scroll vertically when insufficient space is available.
 
 0.3.2 (2026-05-04)
 ------------------
