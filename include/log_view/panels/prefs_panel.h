@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
@@ -51,9 +52,9 @@ protected:
   virtual bool canFocus() const { return false; }
   bool canNavigate() const override { return !hidden(); }
   void activate(bool enable) override;
-  virtual size_t getContentSize() const override { return 19; }
-  virtual int getContentHeight() const override { return std::max(1, height_ - 5); }
-  virtual int64_t getCursor() const override { return scroll_top_ + getContentHeight(); }
+  size_t getContentSize() const override { return 19; }
+  int getContentHeight() const override { return std::max(1, height_ - 5); }
+  int64_t getCursor() const override { return scroll_top_ + getContentHeight(); }
 
 private:
   void cycleTimestampFormat(int direction);

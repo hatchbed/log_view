@@ -409,12 +409,14 @@ void PrefsPanel::ensureSelectedVisible() {
   int header_row  = kHeaderRows[selected_];
   int value_row   = kValueRows[selected_];
 
-  // Scroll up: header_row - scroll_top_ >= 2  =>  scroll_top_ <= header_row - 2
+  // Scroll up:
+  // header_row - scroll_top_ >= 2  =>  scroll_top_ <= header_row - 2
   if (scroll_top_ > header_row - 2) {
     scroll_top_ = header_row - 2;
   }
 
-  // Scroll down: value_row - scroll_top_ <= height_-4  =>  scroll_top_ >= value_row - view_height - 1
+  // Scroll down:
+  // value_row - scroll_top_ <= height_-4  =>  scroll_top_ >= value_row - view_height - 1
   int min_scroll = std::max(0, value_row - view_height - 1);
   if (scroll_top_ < min_scroll) {
     scroll_top_ = min_scroll;
