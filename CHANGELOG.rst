@@ -4,6 +4,13 @@ Changelog for package log_view
 
 Forthcoming
 -----------
+* Updated stamp format selection to preview the stamp format change.
+* Improved formatting of nodes, preferences, and details panels.
+* Fixed exit to only require a single ctrl-c press.
+* Fixed message counts for nodes when loading messages from previous sessions.
+
+0.3.3 (2026-05-20)
+------------------
 * Added support for UTF8 glyphs in log messages.
 * Added support for ANSI color codes in log messages.
 * Fixed display for terminals limited to 8 colors.
