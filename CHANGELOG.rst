@@ -4,6 +4,10 @@ Changelog for package log_view
 
 Forthcoming
 -----------
+* Updated stamp format selection to preview the stamp format change.
+* Improved formatting of nodes, preferences, and details panels.
+* Fixed exit to only require a single ctrl-c press.
+* Fixed message counts for nodes when loading messages from previous sessions.
 * Fixed details panel to scroll vertically when insufficient space is available.
 * Fixed help panel to scroll vertically when insufficient space is available.
 * Fixed preference panel to scroll vertically when insufficient space is available.
