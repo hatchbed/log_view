@@ -93,6 +93,12 @@ void LogView::init() {
   mouseinterval(0);
   mousemask(ALL_MOUSE_EVENTS | REPORT_MOUSE_POSITION, NULL);
   printf("\033[?1003h\n");  // Enable mouse move events
+  define_key("\033[1;5A", KEY_SR);
+  define_key("\033[1;5B", KEY_SF);
+  define_key("\033[5;5~", KEY_SPREVIOUS);
+  define_key("\033[6;5~", KEY_SNEXT);
+  define_key("\033[1;5H", KEY_SHOME);
+  define_key("\033[1;5F", KEY_SEND);
 
   refresh();
 
