@@ -65,6 +65,11 @@ class LogViewer : public rclcpp::Node {
       std::this_thread::sleep_for(30ms);
     }
     view_.close();
+
+    if (rclcpp::ok()) {
+      rclcpp::shutdown();
+    }
+
     ros_thread.join();
   }
 
