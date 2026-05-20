@@ -41,15 +41,15 @@ namespace log_view {
 class PrefsPanel : public PanelInterface {
 public:
   PrefsPanel(int height, int width, int y, int x, Preferences& prefs);
-  virtual ~PrefsPanel() {}
-  virtual void refresh();
-  virtual bool handleKey(int key);
+  ~PrefsPanel() {}
+  void refresh() override;
+  bool handleKey(int key) override;
   bool handleMouse(const MEVENT& event) override { return !hidden(); }
 
   void setOnSave(std::function<void()> cb) { on_save_ = cb; }
 
 protected:
-  virtual bool canFocus() const { return false; }
+  bool canFocus() const override { return false; }
   bool canNavigate() const override { return !hidden(); }
   void activate(bool enable) override;
   size_t getContentSize() const override { return 19; }
