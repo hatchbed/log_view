@@ -28,6 +28,8 @@
 
 #include <log_view/panels/node_panel.h>
 
+#include <log_view/utils.h>
+
 namespace log_view {
 
 void NodePanel::refresh() {
@@ -119,6 +121,22 @@ void NodePanel::refresh() {
       wattron(window_, A_REVERSE);
       mvwprintw(window_, i + 1, getContentWidth(), ">");
       wattroff(window_, A_REVERSE);
+    }
+
+    {
+      int erased     = (shift_ > 0) ? static_cast<int>(shift_) + 2 : 0;
+      int ind_hidden = (shift_ > 0) ? 2 : 0;
+      int vis_col    = 1 + ind_hidden;
+      int name_in_text = std::max(0, static_cast<int>(name.size()) - erased);
+      int vis_name     = std::max(0, name_in_text - ind_hidden);
+      int vis_text     = std::max(0, static_cast<int>(text.size()) - ind_hidden);
+      int chgat_n      = std::min(vis_name, vis_text);
+      if (chgat_n > 0) {
+        attr_t name_attr = (selected ? A_REVERSE : 0) | (hover ? A_BOLD : 0);
+        if (COLORS < 16) { name_attr |= A_BOLD; }  // bold required for brightness on 8-color
+        mvwchgat(window_, static_cast<int>(i) + 1, vis_col, chgat_n, name_attr, CP_BRIGHT_BLUE,
+                 nullptr);
+      }
     }
   }
 

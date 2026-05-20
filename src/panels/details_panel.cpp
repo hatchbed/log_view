@@ -164,6 +164,36 @@ void DetailsPanel::refresh() {
     return row;
   };
 
+  // Like printWrapped but prints `key` in blue and `value` in default color.
+  auto printWrappedWithKey =
+      [&](int row, const std::string& key, const std::string& value) -> int {
+    const std::string full = key + value;
+    {
+      int dr = row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+        mvwaddnstr(window_, dr, 1, key.c_str(), std::min(static_cast<int>(key.size()), max_width));
+        wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+        int val_col   = 1 + static_cast<int>(key.size());
+        int val_width = max_width - static_cast<int>(key.size());
+        if (val_width > 0) {
+          mvwaddnstr(window_, dr, val_col, value.c_str(), val_width);
+        }
+      }
+    }
+    row++;
+    size_t offset = static_cast<size_t>(max_width);
+    while (offset < full.size()) {
+      int dr = row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwaddnstr(window_, dr, 3, full.c_str() + offset, max_width - 2);
+      }
+      row++;
+      offset += static_cast<size_t>(max_width - 2);
+    }
+    return row;
+  };
+
   static const int kAnsiPairs[] = {
     CP_ANSI_BLACK, CP_ANSI_RED,   CP_ANSI_GREEN,   CP_ANSI_YELLOW,
     CP_ANSI_BLUE,  CP_ANSI_MAGENTA, CP_ANSI_CYAN,  CP_ANSI_WHITE
@@ -239,21 +269,25 @@ void DetailsPanel::refresh() {
     for (int i = 0; i < 6; i++) {
       int dr = (i + 1) - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
+        wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
         mvwprintw(window_, dr, 1, "%s", labels[i]);
+        wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
       }
     }
   } else {
     const auto& entry = *entry_ptr;
     int row = 1;
-    row = printWrapped(row, "stamp: " + toString(entry.stamp.seconds(), 4));
-    row = printWrapped(row, level_text);
-    row = printWrapped(row, "file: " + entry.file);
-    row = printWrapped(row, "function: " + entry.function);
-    row = printWrapped(row, "line: " + std::to_string(entry.line));
+    row = printWrappedWithKey(row, "stamp: ", toString(entry.stamp.seconds(), 4));
+    row = printWrappedWithKey(row, "level: ", level_text.substr(7));
+    row = printWrappedWithKey(row, "file: ", entry.file);
+    row = printWrappedWithKey(row, "function: ", entry.function);
+    row = printWrappedWithKey(row, "line: ", std::to_string(entry.line));
     {
       int dr = row - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
+        wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
         mvwprintw(window_, dr, 1, "message: ");
+        wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
       }
     }
     row++;

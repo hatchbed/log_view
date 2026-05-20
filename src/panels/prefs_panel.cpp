@@ -39,10 +39,11 @@ constexpr size_t PrefsPanel::kRotateSizePresets[];
 constexpr size_t PrefsPanel::kMaxSizePresets[];
 
 PrefsPanel::PrefsPanel(int height, int width, int y, int x, Preferences& prefs)
-: PanelInterface(height, width, y, x), prefs_(prefs), pending_(prefs) {}
+: PanelInterface(height, width, y, x), prefs_(prefs), pending_(prefs), original_(prefs) {}
 
 void PrefsPanel::activate(bool enable) {
   if (enable) {
+    original_ = prefs_;
     pending_ = prefs_;
     if (prefs_.workspace_dir.empty()) {
       pending_.persist_logs    = false;
@@ -79,7 +80,11 @@ void PrefsPanel::refresh() {
   int dr;
 
   // --- Timestamp Format ---
-  if ((dr = vis(2)) >= 0) { mvwprintw(window_, dr, 3, "Timestamp Format"); }
+  if ((dr = vis(2)) >= 0) {
+    wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+    mvwprintw(window_, dr, 3, "Timestamp Format");
+    wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+  }
 
   const char* fmt_str = "seconds";
   if (pending_.timestamp_format == Preferences::TimestampFormat::ELAPSED) {
@@ -101,8 +106,10 @@ void PrefsPanel::refresh() {
   // --- Persist Filter Settings ---
   if ((dr = vis(5)) >= 0) {
     if (!workspace_ok) { wattron(window_, kAttrGrey); }
+    else { wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
     mvwprintw(window_, dr, 3, "Persist Filter Settings");
     if (!workspace_ok) { wattroff(window_, kAttrGrey); }
+    else { wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
   }
 
   if ((dr = vis(6)) >= 0) {
@@ -137,8 +144,10 @@ void PrefsPanel::refresh() {
   // --- Persist Logs to Disk ---
   if ((dr = vis(9)) >= 0) {
     if (!workspace_ok) { wattron(window_, kAttrGrey); }
+    else { wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
     mvwprintw(window_, dr, 3, "Persist Logs to Disk");
     if (!workspace_ok) { wattroff(window_, kAttrGrey); }
+    else { wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
   }
 
   if ((dr = vis(10)) >= 0) {
@@ -177,8 +186,10 @@ void PrefsPanel::refresh() {
 
   if ((dr = vis(13)) >= 0) {
     if (!size_enabled) { wattron(window_, kAttrGrey); }
+    else { wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
     mvwprintw(window_, dr, 3, "Log Rotate Size");
     if (!size_enabled) { wattroff(window_, kAttrGrey); }
+    else { wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
   }
 
   if ((dr = vis(14)) >= 0) {
@@ -200,8 +211,10 @@ void PrefsPanel::refresh() {
 
   if ((dr = vis(16)) >= 0) {
     if (!size_enabled) { wattron(window_, kAttrGrey); }
+    else { wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
     mvwprintw(window_, dr, 3, "Max Total Log Size");
     if (!size_enabled) { wattroff(window_, kAttrGrey); }
+    else { wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
   }
 
   if ((dr = vis(17)) >= 0) {
@@ -219,7 +232,11 @@ void PrefsPanel::refresh() {
 
   // --- Show Session Boundaries ---
   bool sb_focused = (selected_ == kFieldSessionBound);
-  if ((dr = vis(19)) >= 0) { mvwprintw(window_, dr, 3, "Show Session Boundaries"); }
+  if ((dr = vis(19)) >= 0) {
+    wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+    mvwprintw(window_, dr, 3, "Show Session Boundaries");
+    wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+  }
   if ((dr = vis(20)) >= 0) {
     if (sb_focused) { wattron(window_, A_REVERSE); }
     mvwprintw(window_, dr, 5, "%-14s", pending_.show_session_boundaries ? "yes" : "no");
@@ -248,7 +265,13 @@ bool PrefsPanel::handleKey(int key) {
   }
 
   if (key == 27 /* ESC */) {
-    pending_ = prefs_;
+    pending_ = original_;
+    if (prefs_.timestamp_format != original_.timestamp_format) {
+      prefs_.timestamp_format = original_.timestamp_format;
+      if (on_preview_) {
+        on_preview_();
+      }
+    }
     hide(true);
   } else if (key == KEY_ENTER_VAL) {
     prefs_ = pending_;
@@ -319,6 +342,12 @@ bool PrefsPanel::handleKey(int key) {
   }
 
   if (!hidden()) {
+    if (prefs_.timestamp_format != pending_.timestamp_format) {
+      prefs_.timestamp_format = pending_.timestamp_format;
+      if (on_preview_) {
+        on_preview_();
+      }
+    }
     refresh();
   }
   return true;
