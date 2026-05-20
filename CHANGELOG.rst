@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.3.3 (2026-05-20)
+------------------
 * Added support for UTF8 glyphs in log messages.
 * Added support for ANSI color codes in log messages.
 * Fixed display for terminals limited to 8 colors.
