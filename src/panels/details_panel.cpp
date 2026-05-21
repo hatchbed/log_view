@@ -30,7 +30,7 @@
 
 #include <string>
 
-#include <rosgraph_msgs/Log.h>
+#include <log_view/datatypes.h>
 #include <log_view/utils.h>
 
 namespace log_view {
@@ -83,14 +83,7 @@ void DetailsPanel::refresh() {
   // Build level text early - needed for both content-size counting and rendering.
   std::string level_text;
   if (entry_ptr) {
-    level_text = "level: ";
-    uint8_t lvl = entry_ptr->level;
-    if      (lvl == rosgraph_msgs::Log::DEBUG) { level_text += "DEBUG"; }
-    else if (lvl == rosgraph_msgs::Log::INFO)  { level_text += "INFO";  }
-    else if (lvl == rosgraph_msgs::Log::WARN)  { level_text += "WARN";  }
-    else if (lvl == rosgraph_msgs::Log::ERROR) { level_text += "ERROR"; }
-    else if (lvl == rosgraph_msgs::Log::FATAL) { level_text += "FATAL"; }
-    else                                       { level_text += std::to_string(lvl); }
+    level_text = "level: " + levelName(entry_ptr->level);
   }
 
   // Compute the total number of content rows for the current entry at a given width.
