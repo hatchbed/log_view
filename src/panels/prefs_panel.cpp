@@ -69,57 +69,21 @@ void PrefsPanel::refresh() {
 
   bool workspace_ok = !prefs_.workspace_dir.empty();
   int path_max = width_ - 6;
-  int bot = height_ - 4;
-
-  // Returns the display row for logical content row r, or -1 if clipped.
-  auto vis = [&](int r) -> int {
-    int d = r - scroll_top_;
-    return (d >= 2 && d <= bot) ? d : -1;
-  };
-
-  int dr;
 
   // --- Timestamp Format ---
-  if ((dr = vis(2)) >= 0) {
-    wattron(window_, kAttrBoldBlue);
-    mvwprintw(window_, dr, 3, "Timestamp Format");
-    wattroff(window_, kAttrBoldBlue);
-  }
-
+  printSectionHeader(2, "Timestamp Format", true);
   const char* fmt_str = "seconds";
   if (pending_.timestamp_format == Preferences::TimestampFormat::ELAPSED) {
     fmt_str = "elapsed";
   } else if (pending_.timestamp_format == Preferences::TimestampFormat::TIME_OF_DAY) {
     fmt_str = "time of day";
   }
-
-  bool ts_focused = (selected_ == kFieldTimestamp);
-  if ((dr = vis(3)) >= 0) {
-    if (ts_focused) { wattron(window_, A_REVERSE); }
-    mvwprintw(window_, dr, 5, "%-14s", fmt_str);
-    if (ts_focused) { wattroff(window_, A_REVERSE); }
-    if (!ts_focused) { wattron(window_, kAttrGrey); }
-    mvwprintw(window_, dr, 20, "< >");
-    if (!ts_focused) { wattroff(window_, kAttrGrey); }
-  }
+  printValueRow(3, selected_ == kFieldTimestamp, true, fmt_str);
 
   // --- Persist Filter Settings ---
-  if ((dr = vis(5)) >= 0) {
-    if (!workspace_ok) {
-      wattron(window_, kAttrGrey);
-    } else {
-      wattron(window_, kAttrBoldBlue);
-    }
-    mvwprintw(window_, dr, 3, "Persist Filter Settings");
-    if (!workspace_ok)
-    {
-      wattroff(window_, kAttrGrey);
-    } else {
-      wattroff(window_, kAttrBoldBlue);
-    }
-  }
-
-  if ((dr = vis(6)) >= 0) {
+  printSectionHeader(5, "Persist Filter Settings", workspace_ok);
+  int dr;
+  if ((dr = visRow(6)) >= 0) {
     if (workspace_ok) {
       std::string path = prefs_.workspace_dir + "/preferences.yaml";
       if (static_cast<int>(path.size()) > path_max) {
@@ -136,34 +100,12 @@ void PrefsPanel::refresh() {
       wattroff(window_, COLOR_PAIR(CP_YELLOW));
     }
   }
-
-  bool pf_focused = workspace_ok && (selected_ == kFieldPersist);
-  if ((dr = vis(7)) >= 0) {
-    if (!workspace_ok) { wattron(window_, kAttrGrey); }
-    if (pf_focused) { wattron(window_, A_REVERSE); }
-    mvwprintw(window_, dr, 5, "%-14s", pending_.persist_filters ? "yes" : "no");
-    if (pf_focused) { wattroff(window_, A_REVERSE); }
-    if (!pf_focused) { wattron(window_, kAttrGrey); }
-    mvwprintw(window_, dr, 20, "< >");
-    if (!workspace_ok || !pf_focused) { wattroff(window_, kAttrGrey); }
-  }
+  printValueRow(7, workspace_ok && selected_ == kFieldPersist, workspace_ok,
+                pending_.persist_filters ? "yes" : "no");
 
   // --- Persist Logs to Disk ---
-  if ((dr = vis(9)) >= 0) {
-    if (!workspace_ok) {
-      wattron(window_, kAttrGrey);
-    } else {
-      wattron(window_, kAttrBoldBlue);
-    }
-    mvwprintw(window_, dr, 3, "Persist Logs to Disk");
-    if (!workspace_ok) {
-      wattroff(window_, kAttrGrey);
-    } else {
-      wattroff(window_, kAttrBoldBlue);
-    }
-  }
-
-  if ((dr = vis(10)) >= 0) {
+  printSectionHeader(9, "Persist Logs to Disk", workspace_ok);
+  if ((dr = visRow(10)) >= 0) {
     if (workspace_ok) {
       std::string path = prefs_.workspace_dir + "/";
       if (static_cast<int>(path.size()) > path_max) {
@@ -180,96 +122,23 @@ void PrefsPanel::refresh() {
       wattroff(window_, COLOR_PAIR(CP_YELLOW));
     }
   }
+  printValueRow(11, workspace_ok && selected_ == kFieldPersistLogs, workspace_ok,
+                pending_.persist_logs ? "yes" : "no");
 
-  bool pl_focused = workspace_ok && (selected_ == kFieldPersistLogs);
-  if ((dr = vis(11)) >= 0) {
-    if (!workspace_ok) { wattron(window_, kAttrGrey); }
-    if (pl_focused) { wattron(window_, A_REVERSE); }
-    mvwprintw(window_, dr, 5, "%-14s", pending_.persist_logs ? "yes" : "no");
-    if (pl_focused) { wattroff(window_, A_REVERSE); }
-    if (!pl_focused) { wattron(window_, kAttrGrey); }
-    mvwprintw(window_, dr, 20, "< >");
-    if (!workspace_ok || !pl_focused) { wattroff(window_, kAttrGrey); }
-  }
-
-  // --- Log Rotate Size ---
+  // --- Log Rotate Size / Max Total Log Size ---
   bool size_enabled = workspace_ok && pending_.persist_logs;
-  bool rs_focused = size_enabled && (selected_ == kFieldRotateSize);
-  std::string rotate_str = formatSize(pending_.log_rotate_size);
+  printSectionHeader(13, "Log Rotate Size", size_enabled);
+  printValueRow(14, size_enabled && selected_ == kFieldRotateSize, size_enabled,
+                formatSize(pending_.log_rotate_size));
 
-  if ((dr = vis(13)) >= 0) {
-    if (!size_enabled) {
-      wattron(window_, kAttrGrey);
-    } else {
-      wattron(window_, kAttrBoldBlue);
-    }
-    mvwprintw(window_, dr, 3, "Log Rotate Size");
-    if (!size_enabled) {
-      wattroff(window_, kAttrGrey);
-    } else {
-      wattroff(window_, kAttrBoldBlue);
-    }
-  }
-
-  if ((dr = vis(14)) >= 0) {
-    if (rs_focused) {
-      wattron(window_, A_REVERSE);
-    } else if (!size_enabled) {
-      wattron(window_, kAttrGrey);
-    }
-    mvwprintw(window_, dr, 5, "%-14s", rotate_str.c_str());
-    if (rs_focused) { wattroff(window_, A_REVERSE); }
-    if (!rs_focused) { wattron(window_, kAttrGrey); }
-    mvwprintw(window_, dr, 20, "< >");
-    if (!rs_focused) { wattroff(window_, kAttrGrey); }
-  }
-
-  // --- Max Total Log Size ---
-  bool ms_focused = size_enabled && (selected_ == kFieldMaxSize);
-  std::string max_str = formatSize(pending_.log_max_size);
-
-  if ((dr = vis(16)) >= 0) {
-    if (!size_enabled) {
-      wattron(window_, kAttrGrey);
-    } else {
-      wattron(window_, kAttrBoldBlue);
-    }
-    mvwprintw(window_, dr, 3, "Max Total Log Size");
-    if (!size_enabled) {
-      wattroff(window_, kAttrGrey);
-    } else {
-      wattroff(window_, kAttrBoldBlue);
-    }
-  }
-
-  if ((dr = vis(17)) >= 0) {
-    if (ms_focused) {
-      wattron(window_, A_REVERSE);
-    } else if (!size_enabled) {
-      wattron(window_, kAttrGrey);
-    }
-    mvwprintw(window_, dr, 5, "%-14s", max_str.c_str());
-    if (ms_focused) { wattroff(window_, A_REVERSE); }
-    if (!ms_focused) { wattron(window_, kAttrGrey); }
-    mvwprintw(window_, dr, 20, "< >");
-    if (!ms_focused) { wattroff(window_, kAttrGrey); }
-  }
+  printSectionHeader(16, "Max Total Log Size", size_enabled);
+  printValueRow(17, size_enabled && selected_ == kFieldMaxSize, size_enabled,
+                formatSize(pending_.log_max_size));
 
   // --- Show Session Boundaries ---
-  bool sb_focused = (selected_ == kFieldSessionBound);
-  if ((dr = vis(19)) >= 0) {
-    wattron(window_, kAttrBoldBlue);
-    mvwprintw(window_, dr, 3, "Show Session Boundaries");
-    wattroff(window_, kAttrBoldBlue);
-  }
-  if ((dr = vis(20)) >= 0) {
-    if (sb_focused) { wattron(window_, A_REVERSE); }
-    mvwprintw(window_, dr, 5, "%-14s", pending_.show_session_boundaries ? "yes" : "no");
-    if (sb_focused) { wattroff(window_, A_REVERSE); }
-    if (!sb_focused) { wattron(window_, kAttrGrey); }
-    mvwprintw(window_, dr, 20, "< >");
-    if (!sb_focused) { wattroff(window_, kAttrGrey); }
-  }
+  printSectionHeader(19, "Show Session Boundaries", true);
+  printValueRow(20, selected_ == kFieldSessionBound, true,
+                pending_.show_session_boundaries ? "yes" : "no");
 
   drawScrollBar(getContentSize(), getContentHeight(), 2, width_ - 1);
 
@@ -478,6 +347,36 @@ void PrefsPanel::ensureSelectedVisible() {
 
   int max_scroll = std::max(0, static_cast<int>(getContentSize()) - view_height);
   scroll_top_ = std::max(0, std::min(max_scroll, scroll_top_));
+}
+
+int PrefsPanel::visRow(int logical_row) const {
+  int d = logical_row - scroll_top_;
+  return (d >= 2 && d <= height_ - 4) ? d : -1;
+}
+
+void PrefsPanel::printSectionHeader(int logical_row, const char* label, bool enabled) {
+  int dr = visRow(logical_row);
+  if (dr < 0) return;
+  wattron(window_, enabled ? kAttrBoldBlue : kAttrGrey);
+  mvwprintw(window_, dr, 3, "%s", label);
+  wattroff(window_, enabled ? kAttrBoldBlue : kAttrGrey);
+}
+
+void PrefsPanel::printValueRow(
+    int logical_row, bool focused, bool enabled, const std::string& value)
+{
+  int dr = visRow(logical_row);
+  if (dr < 0) return;
+  if (focused) {
+    wattron(window_, A_REVERSE);
+  } else if (!enabled) {
+    wattron(window_, kAttrGrey);
+  }
+  mvwprintw(window_, dr, 5, "%-14s", value.c_str());
+  if (focused) { wattroff(window_, A_REVERSE); }
+  if (!focused) { wattron(window_, kAttrGrey); }
+  mvwprintw(window_, dr, 20, "< >");
+  if (!focused) { wattroff(window_, kAttrGrey); }
 }
 
 }  // namespace log_view

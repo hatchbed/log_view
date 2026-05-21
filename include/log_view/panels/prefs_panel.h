@@ -66,6 +66,10 @@ private:
   void snapSelectionToViewport(bool prefer_top);
   void ensureSelectedVisible();
 
+  int visRow(int logical_row) const;
+  void printSectionHeader(int logical_row, const char* label, bool enabled);
+  void printValueRow(int logical_row, bool focused, bool enabled, const std::string& value);
+
   Preferences& prefs_;
   Preferences pending_;
   Preferences original_;
