@@ -124,9 +124,7 @@ void DetailsPanel::refresh() {
   }
 
   box(window_, 0, 0);
-  if (focus()) { wattron(window_, A_BOLD); }
-  mvwprintw(window_, 0, width_ / 2 - 3, " details ");
-  if (focus()) { wattroff(window_, A_BOLD); }
+  printStyledAt(window_, 0, width_ / 2 - 3, focus() ? A_BOLD : 0, " details ");
 
   int max_width = getContentWidth();
 
@@ -158,9 +156,8 @@ void DetailsPanel::refresh() {
     {
       int dr = row - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        wattron(window_, kAttrBoldBlue);
-        mvwaddnstr(window_, dr, 1, key.c_str(), std::min(static_cast<int>(key.size()), max_width));
-        wattroff(window_, kAttrBoldBlue);
+        printStyledAt(window_, dr, 1, kAttrBoldBlue,
+          "%.*s", std::min(static_cast<int>(key.size()), max_width), key.c_str());
         int val_col   = 1 + static_cast<int>(key.size());
         int val_width = max_width - static_cast<int>(key.size());
         if (val_width > 0) {
@@ -179,11 +176,6 @@ void DetailsPanel::refresh() {
       offset += static_cast<size_t>(max_width - 2);
     }
     return row;
-  };
-
-  static const int kAnsiPairs[] = {
-    CP_ANSI_BLACK, CP_ANSI_RED,   CP_ANSI_GREEN,   CP_ANSI_YELLOW,
-    CP_ANSI_BLUE,  CP_ANSI_MAGENTA, CP_ANSI_CYAN,  CP_ANSI_WHITE
   };
 
   // Like printWrapped but strips ANSI before layout then repaints color attributes.
@@ -232,14 +224,12 @@ void DetailsPanel::refresh() {
           size_t chunk = std::min(remaining, static_cast<size_t>(space));
           int dr = cur_row - scroll_top;
           if (has_attr && dr >= 1 && dr <= height_ - 2) {
-            if (has_color) { wattron(window_, COLOR_PAIR(kAnsiPairs[seg.ansi_fg])); }
-            if (seg.bold)  { wattron(window_, A_BOLD); }
-            if (seg.dim)   { wattron(window_, A_DIM); }
-            mvwprintw(window_, dr, col_off + vis_col,
+            attr_t attr = 0;
+            if (has_color) attr |= COLOR_PAIR(kAnsiPairs[seg.ansi_fg]);
+            if (seg.bold)  attr |= A_BOLD;
+            if (seg.dim)   attr |= A_DIM;
+            printStyledAt(window_, dr, col_off + vis_col, attr,
               "%.*s", static_cast<int>(chunk), seg.text.c_str() + seg_off);
-            if (seg.dim)   { wattroff(window_, A_DIM); }
-            if (seg.bold)  { wattroff(window_, A_BOLD); }
-            if (has_color) { wattroff(window_, COLOR_PAIR(kAnsiPairs[seg.ansi_fg])); }
           }
           vis_col   += static_cast<int>(chunk);
           seg_off   += chunk;
@@ -256,9 +246,7 @@ void DetailsPanel::refresh() {
     for (int i = 0; i < 6; i++) {
       int dr = (i + 1) - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        wattron(window_, kAttrBoldBlue);
-        mvwprintw(window_, dr, 1, "%s", labels[i]);
-        wattroff(window_, kAttrBoldBlue);
+        printStyledAt(window_, dr, 1, kAttrBoldBlue, "%s", labels[i]);
       }
     }
   } else {
@@ -272,9 +260,7 @@ void DetailsPanel::refresh() {
     {
       int dr = row - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        wattron(window_, kAttrBoldBlue);
-        mvwprintw(window_, dr, 1, "message: ");
-        wattroff(window_, kAttrBoldBlue);
+        printStyledAt(window_, dr, 1, kAttrBoldBlue, "message: ");
       }
     }
     row++;

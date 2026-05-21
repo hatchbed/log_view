@@ -357,9 +357,7 @@ int PrefsPanel::visRow(int logical_row) const {
 void PrefsPanel::printSectionHeader(int logical_row, const char* label, bool enabled) {
   int dr = visRow(logical_row);
   if (dr < 0) return;
-  wattron(window_, enabled ? kAttrBoldBlue : kAttrGrey);
-  mvwprintw(window_, dr, 3, "%s", label);
-  wattroff(window_, enabled ? kAttrBoldBlue : kAttrGrey);
+  printStyledAt(window_, dr, 3, enabled ? kAttrBoldBlue : kAttrGrey, "%s", label);
 }
 
 void PrefsPanel::printValueRow(
@@ -367,16 +365,9 @@ void PrefsPanel::printValueRow(
 {
   int dr = visRow(logical_row);
   if (dr < 0) return;
-  if (focused) {
-    wattron(window_, A_REVERSE);
-  } else if (!enabled) {
-    wattron(window_, kAttrGrey);
-  }
-  mvwprintw(window_, dr, 5, "%-14s", value.c_str());
-  if (focused) { wattroff(window_, A_REVERSE); }
-  if (!focused) { wattron(window_, kAttrGrey); }
-  mvwprintw(window_, dr, 20, "< >");
-  if (!focused) { wattroff(window_, kAttrGrey); }
+  attr_t value_attr = focused ? A_REVERSE : (!enabled ? kAttrGrey : 0);
+  printStyledAt(window_, dr, 5, value_attr, "%-14s", value.c_str());
+  printStyledAt(window_, dr, 20, focused ? 0 : kAttrGrey, "< >");
 }
 
 }  // namespace log_view
