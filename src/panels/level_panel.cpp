@@ -37,7 +37,11 @@ void LevelPanel::refresh() {
   mvwprintw(window_, 0, 0, "%s", clear.c_str());
   mvwprintw(window_, 0, 0, " debug  info  warn  error  fatal      all nodes");
   wattroff(window_, A_BOLD);
-  mvwprintw(window_, 0, width_ - 17, "CTRL+h: view help");
+  if (show_invert_hint_ && show_invert_hint_() && width_ - 34 > 47) {
+    mvwprintw(window_, 0, width_ - 34, "i: invert nodes  ");
+  }
+  bool help_open = help_open_ && help_open_();
+  mvwprintw(window_, 0, width_ - 17, help_open ? "CTRL+h: hide help" : "CTRL+h: view help");
   wattroff(window_, A_REVERSE);
 
   wattron(window_, kAttrGreyBg);

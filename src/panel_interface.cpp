@@ -96,7 +96,7 @@ bool PanelInterface::handleInput(int val) {
       input_loc_ = -1;
     }
     key_used = true;
-  } else if (input_loc_ != 0 && val == KEY_LEFT) {
+  } else if (!input_text_.empty() && input_loc_ != 0 && val == KEY_LEFT) {
     if (input_loc_ == -1) {
       input_loc_ = input_text_.size();
     }
@@ -147,10 +147,10 @@ bool PanelInterface::handleNavigation(int key) {
   } else if (key == KEY_HOME) {
     moveTo(0);
     key_used = true;
-  } else if (key == KEY_LEFT) {
+  } else if (key == KEY_LEFT && shift_ > 0) {
     shift(-5);
     key_used = true;
-  } else if (key == KEY_RIGHT) {
+  } else if (key == KEY_RIGHT && shift_ + getContentWidth() < max_length_) {
     shift(5);
     key_used = true;
   } else if (canSelect() && key == ' ') {
@@ -193,9 +193,14 @@ void PanelInterface::hide(bool enable) {
 }
 
 bool PanelInterface::setFocus(bool enable) {
+  bool prev = focus_;
   focus_ = false;
   if (enable && !hidden_ && canFocus()) {
     focus_ = true;
+  }
+
+  if (focus_ != prev) {
+    forceRefresh();
   }
 
   return focus_;
