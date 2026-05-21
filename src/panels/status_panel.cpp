@@ -43,9 +43,14 @@ void StatusPanel::refresh() {
   }
 
   std::string system_time = toString(system_time_.seconds(), 2);
-  std::string ros_time =  toString(ros_time_.seconds(), 2);
 
-  std::string time_str = "ros time: " + ros_time + "  system time: " + system_time;
+  std::string time_str;
+  if (has_sim_time_) {
+    std::string sim_time = toString(sim_time_.seconds(), 2);
+    time_str = "sim time: " + sim_time + "  system time: " + system_time;
+  } else {
+    time_str = "system time: " + system_time;
+  }
   mvwprintw(window_, 0, width_ - time_str.size(), "%s", time_str.c_str());
   wattroff(window_, A_REVERSE);
 }

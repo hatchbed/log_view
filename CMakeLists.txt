@@ -4,6 +4,7 @@ project(log_view)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcl_interfaces REQUIRED)
+find_package(rosgraph_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
@@ -48,7 +49,10 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 add_executable(log_viewer src/main.cpp)
-target_link_libraries(log_viewer ${PROJECT_NAME})
+target_link_libraries(log_viewer
+  ${PROJECT_NAME}
+  rosgraph_msgs::rosgraph_msgs__rosidl_typesupport_cpp
+)
 
 #############
 ## Install ##

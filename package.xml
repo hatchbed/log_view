@@ -19,6 +19,7 @@
 
   <depend>rclcpp</depend>
   <depend>rcl_interfaces</depend>
+  <depend>rosgraph_msgs</depend>
   <depend>libncurses-dev</depend>
   <depend>yaml_cpp_vendor</depend>
 

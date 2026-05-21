@@ -242,8 +242,8 @@ bool LogView::exited() const {
   return exited_;
 }
 
-void LogView::setRosTime(const rclcpp::Time& time) {
-  status_panel_->setRosTime(time);
+void LogView::setSimTime(const rclcpp::Time& time) {
+  status_panel_->setSimTime(time);
 }
 
 void LogView::setSystemTime(const rclcpp::Time& time) {
