@@ -30,7 +30,10 @@
 namespace log_view {
 
 void FilterPanel::refresh() {
-  mvwprintw(window_, 0, 0, "filter: %s", input_text_.c_str());
+  if (focus()) { wattron(window_, A_BOLD); }
+  mvwprintw(window_, 0, 0, "filter: ");
+  if (focus()) { wattroff(window_, A_BOLD); }
+  mvwprintw(window_, 0, inputOffset(), "%s", input_text_.c_str());
 }
 
 void FilterPanel::activate(bool enable) {
