@@ -331,22 +331,7 @@ std::string LogPanel::getPrefix(const LogEntry& entry, size_t line) const {
       timestamp = toString(entry.stamp.toSec(), 4);
       break;
   }
-
-  std::string text = timestamp + " [";
-  if (entry.level == rosgraph_msgs::Log::DEBUG) {
-    text += "DEBUG";
-  } else if (entry.level == rosgraph_msgs::Log::INFO) {
-    text += "INFO";
-  } else if (entry.level == rosgraph_msgs::Log::WARN) {
-    text += "WARN";
-  } else if (entry.level == rosgraph_msgs::Log::ERROR) {
-    text += "ERROR";
-  } else if (entry.level == rosgraph_msgs::Log::FATAL) {
-    text += "FATAL";
-  } else {
-    text += std::to_string(entry.level);
-  }
-  text += "] ";
+  std::string text = timestamp + " [" + levelName(entry.level) + "] ";
   if (line > 0) {
     text = std::string(text.size(), ' ');
   }
