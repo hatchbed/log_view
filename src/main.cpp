@@ -30,6 +30,7 @@
 #include <log_view/log_store.h>
 #include <log_view/log_view.h>
 #include <rosgraph_msgs/Log.h>
+#include <rosgraph_msgs/Clock.h>
 
 #include <csignal>
 
@@ -60,13 +61,20 @@ class LogViewer {
         signal(SIGINT, handleSigint);
         ros::NodeHandle node;
         sub_ = node.subscribe("/rosout_agg", 10000, &LogViewer::handleMsg, this);
+        clock_sub_ = node.subscribe<rosgraph_msgs::Clock>("/clock", 1,
+          [this](const rosgraph_msgs::Clock::ConstPtr& msg) {
+            sim_time_ns_ = msg->clock.toNSec();
+            has_sim_time_ = true;
+          });
       }
       else if (connected && !master_status) {
         ros::shutdown();
       }
       else if (connected && master_status) {
         ros::spinOnce();
-        view_.setRosTime(ros::Time::now());
+        if (has_sim_time_) {
+          view_.setSimTime(ros::Time().fromNSec(sim_time_ns_.load()));
+        }
       }
 
       connected = master_status;
@@ -85,6 +93,9 @@ class LogViewer {
 
   private:
     ros::Subscriber sub_;
+    ros::Subscriber clock_sub_;
+    std::atomic<int64_t> sim_time_ns_{0};
+    std::atomic<bool> has_sim_time_{false};
 
     log_view::LogStorePtr logs_;
     log_view::LogView view_;

@@ -244,8 +244,8 @@ void LogView::setConnected(bool connected) {
   status_panel_->setConnected(connected);
 }
 
-void LogView::setRosTime(const ros::Time& time) {
-  status_panel_->setRosTime(time);
+void LogView::setSimTime(const ros::Time& time) {
+  status_panel_->setSimTime(time);
 }
 
 void LogView::setSystemTime(const ros::WallTime& time) {
