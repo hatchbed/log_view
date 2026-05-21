@@ -4,6 +4,7 @@ Changelog for package log_view
 
 Forthcoming
 -----------
+* Added subscription to /clock to display sim time on status bar.
 * Updated stamp format selection to preview the stamp format change.
 * Improved formatting of nodes, preferences, and details panels.
 * Fixed exit to only require a single ctrl-c press.
