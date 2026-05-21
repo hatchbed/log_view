@@ -122,9 +122,7 @@ void DetailsPanel::refresh() {
   }
 
   box(window_, 0, 0);
-  if (focus()) { wattron(window_, A_BOLD); }
-  mvwprintw(window_, 0, width_ / 2 - 3, " details ");
-  if (focus()) { wattroff(window_, A_BOLD); }
+  printStyledAt(window_, 0, width_ / 2 - 3, focus() ? A_BOLD : 0, " details ");
 
   int max_width = getContentWidth();
 
@@ -156,9 +154,8 @@ void DetailsPanel::refresh() {
     {
       int dr = row - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        wattron(window_, kAttrBoldBlue);
-        mvwaddnstr(window_, dr, 1, key.c_str(), std::min(static_cast<int>(key.size()), max_width));
-        wattroff(window_, kAttrBoldBlue);
+        printStyledAt(window_, dr, 1, kAttrBoldBlue,
+          "%.*s", std::min(static_cast<int>(key.size()), max_width), key.c_str());
         int val_col   = 1 + static_cast<int>(key.size());
         int val_width = max_width - static_cast<int>(key.size());
         if (val_width > 0) {
@@ -179,14 +176,76 @@ void DetailsPanel::refresh() {
     return row;
   };
 
+  // Like printWrapped but strips ANSI before layout then repaints color attributes.
+  auto printWrappedAnsi = [&](int row, const std::string& raw) -> int {
+    bool has_ansi = raw.find('\033') != std::string::npos;
+    const std::string& display = has_ansi ? stripAnsi(raw) : raw;
+
+    // First pass: layout with stripped text (clipped to viewport).
+    int last_row = row;
+    {
+      int dr = last_row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwaddnstr(window_, dr, 1, display.c_str(), max_width);
+      }
+    }
+    size_t offset = static_cast<size_t>(max_width);
+    while (offset < display.size()) {
+      last_row++;
+      int dr = last_row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwaddnstr(window_, dr, 3, display.c_str() + offset, max_width - 2);
+      }
+      offset += static_cast<size_t>(max_width - 2);
+    }
+
+    // Second pass: ANSI color overlay (clipped to viewport).
+    if (has_ansi) {
+      int cur_row = row;
+      int col_off = 1;
+      int row_cap = max_width;
+      int vis_col = 0;
+      for (const auto& seg : parseAnsiSegments(raw)) {
+        bool has_color = seg.ansi_fg >= 0 && seg.ansi_fg <= 7;
+        bool has_attr  = has_color || seg.bold || seg.dim;
+        size_t remaining = seg.text.size();
+        size_t seg_off   = 0;
+        while (remaining > 0) {
+          int space = row_cap - vis_col;
+          if (space <= 0) {
+            cur_row++;
+            col_off = 3;
+            row_cap = max_width - 2;
+            vis_col = 0;
+            space   = row_cap;
+          }
+          size_t chunk = std::min(remaining, static_cast<size_t>(space));
+          int dr = cur_row - scroll_top;
+          if (has_attr && dr >= 1 && dr <= height_ - 2) {
+            attr_t attr = 0;
+            if (has_color) attr |= COLOR_PAIR(kAnsiPairs[seg.ansi_fg]);
+            if (seg.bold)  attr |= A_BOLD;
+            if (seg.dim)   attr |= A_DIM;
+            printStyledAt(window_, dr, col_off + vis_col, attr,
+              "%.*s", static_cast<int>(chunk), seg.text.c_str() + seg_off);
+          }
+          vis_col   += static_cast<int>(chunk);
+          seg_off   += chunk;
+          remaining -= chunk;
+        }
+      }
+    }
+
+    return last_row + 1;
+  };
+
+
   if (!entry_ptr) {
     const char* labels[] = {"stamp: ", "level: ", "file: ", "function: ", "line: ", "message: "};
     for (int i = 0; i < 6; i++) {
       int dr = (i + 1) - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        wattron(window_, kAttrBoldBlue);
-        mvwprintw(window_, dr, 1, "%s", labels[i]);
-        wattroff(window_, kAttrBoldBlue);
+        printStyledAt(window_, dr, 1, kAttrBoldBlue, "%s", labels[i]);
       }
     }
   } else {
@@ -200,14 +259,12 @@ void DetailsPanel::refresh() {
     {
       int dr = row - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        wattron(window_, kAttrBoldBlue);
-        mvwprintw(window_, dr, 1, "message: ");
-        wattroff(window_, kAttrBoldBlue);
+        printStyledAt(window_, dr, 1, kAttrBoldBlue, "message: ");
       }
     }
     row++;
     for (const auto& line : entry.text) {
-      row = printWrapped(row, line);
+      row = printWrappedAnsi(row, line);
     }
   }
 

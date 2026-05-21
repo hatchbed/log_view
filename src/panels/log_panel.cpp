@@ -350,9 +350,7 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
     if (static_cast<int>(text.size()) > w) {
       text.resize(w);
     }
-    wattron(window_, COLOR_PAIR(CP_GREY));
-    mvwprintw(window_, row, 0, "%s", text.c_str());
-    wattroff(window_, COLOR_PAIR(CP_GREY));
+    printStyledAt(window_, row, 0, kAttrGrey, "%s", text.c_str());
     return;
   }
 
@@ -365,48 +363,68 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
     selected = idx >= start && idx <= end;
   }
 
-  if (selected) {
-    wattron(window_, A_REVERSE);
-  }
-
+  attr_t level_attr = selected ? A_REVERSE : 0;
   if (entry.level == rosgraph_msgs::Log::DEBUG) {
-    wattron(window_, A_DIM);
+    level_attr |= A_DIM;
   } else if (entry.level == rosgraph_msgs::Log::ERROR) {
-    wattron(window_, COLOR_PAIR(CP_RED));
+    level_attr |= COLOR_PAIR(CP_RED);
   } else if (entry.level == rosgraph_msgs::Log::FATAL) {
-    wattron(window_, A_BOLD);
-    wattron(window_, COLOR_PAIR(CP_RED));
+    level_attr |= A_BOLD | COLOR_PAIR(CP_RED);
   } else if (entry.level == rosgraph_msgs::Log::WARN) {
-    wattron(window_, COLOR_PAIR(CP_YELLOW));
+    level_attr |= COLOR_PAIR(CP_YELLOW);
   }
-
   std::string prefix = getPrefix(entry, line);
-  std::string text = prefix + entry.text[line];
-  max_length_ = std::max(max_length_, text.size());
+  const std::string& raw_line = entry.text[line];
+  std::string stripped_line = raw_line.find('\033') != std::string::npos
+    ? stripAnsi(raw_line) : raw_line;
+  std::string text = prefix + stripped_line;
+  max_length_ = std::max(max_length_, utf8DisplayWidth(text));
 
   std::string match = filter_.getSearch();
   size_t match_size = match.size();
   std::vector<size_t> match_indices;
   bool matched = false;
   if (!match.empty()) {
-    match_indices = find(entry.text[line], match, true);
+    match_indices = find(stripped_line, match, true);
     matched = !match_indices.empty();
   }
 
-  if (shift_ >= text.size()) {
-    text.clear();
-  } else if (shift_ > 0) {
-    text.erase(0, shift_);
+  if (shift_ > 0) {
+    text = utf8EraseDisplayCols(text, static_cast<size_t>(shift_));
   }
-  if (text.size() > width_) {
-    text.resize(width_);
+  text = utf8TruncateDisplayCols(text, static_cast<size_t>(width_));
+
+  printStyledAt(window_, row, 0, level_attr, "%s", text.c_str());
+
+  // ANSI color/bold overlay pass
+  if (raw_line.find('\033') != std::string::npos) {
+    size_t vis_col = prefix.length();  // visible column of current segment start
+    for (const auto& seg : parseAnsiSegments(raw_line)) {
+      size_t seg_end = vis_col + seg.text.size();
+      bool has_color = seg.ansi_fg >= 0 && seg.ansi_fg <= 7;
+      bool has_attr  = has_color || seg.bold || seg.dim;
+      if (has_attr && !seg.text.empty()) {
+        int64_t scr_start = static_cast<int64_t>(vis_col) - static_cast<int64_t>(shift_);
+        int64_t scr_end   = static_cast<int64_t>(seg_end) - static_cast<int64_t>(shift_);
+        if (scr_start < static_cast<int64_t>(width_) && scr_end > 0) {
+          int64_t clip_start = std::max(static_cast<int64_t>(0), scr_start);
+          int64_t clip_end   = std::min(static_cast<int64_t>(width_), scr_end);
+          size_t  txt_offset = static_cast<size_t>(clip_start - scr_start);
+          size_t  txt_len    = static_cast<size_t>(clip_end - clip_start);
+          attr_t attr = selected ? A_REVERSE : 0;
+          if (has_color) attr |= COLOR_PAIR(kAnsiPairs[seg.ansi_fg]);
+          if (seg.bold)  attr |= A_BOLD;
+          if (seg.dim)   attr |= A_DIM;
+          printStyledAt(window_, row, static_cast<int>(clip_start), attr,
+            "%.*s", static_cast<int>(txt_len), seg.text.c_str() + txt_offset);
+        }
+      }
+      vis_col = seg_end;
+    }
   }
 
-  mvwprintw(window_, row, 0, "%s", text.c_str());
 
   if (matched) {
-    wattron(window_, COLOR_PAIR(CP_DEFAULT_CYAN));
-
     if (text.empty()) {
       mvwprintw(window_, row, 0, " ");
     } else {
@@ -421,26 +439,11 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
 
         int64_t substr_len = std::max(static_cast<int64_t>(1), end_idx - start_idx);
 
-        mvwprintw(window_, row, start_idx, "%s", text.substr(start_idx, substr_len).c_str());
+        printStyledAt(window_, row, static_cast<int>(start_idx),
+          (selected ? A_REVERSE : 0) | COLOR_PAIR(CP_DEFAULT_CYAN),
+          "%s", text.substr(start_idx, substr_len).c_str());
       }
     }
-    wattroff(window_, COLOR_PAIR(CP_DEFAULT_CYAN));
-  }
-
-  if (entry.level == rosgraph_msgs::Log::DEBUG) {
-    wattroff(window_, A_DIM);
-  } else if (entry.level == rosgraph_msgs::Log::ERROR) {
-    wattroff(window_, COLOR_PAIR(CP_RED));
-  }
-  if (entry.level == rosgraph_msgs::Log::FATAL) {
-    wattroff(window_, COLOR_PAIR(CP_RED));
-    wattroff(window_, A_BOLD);
-  } else if (entry.level == rosgraph_msgs::Log::WARN) {
-    wattroff(window_, COLOR_PAIR(CP_YELLOW));
-  }
-
-  if (selected) {
-    wattroff(window_, A_REVERSE);
   }
 }
 
