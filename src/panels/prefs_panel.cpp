@@ -81,9 +81,9 @@ void PrefsPanel::refresh() {
 
   // --- Timestamp Format ---
   if ((dr = vis(2)) >= 0) {
-    wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+    wattron(window_, kAttrBoldBlue);
     mvwprintw(window_, dr, 3, "Timestamp Format");
-    wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+    wattroff(window_, kAttrBoldBlue);
   }
 
   const char* fmt_str = "seconds";
@@ -105,11 +105,11 @@ void PrefsPanel::refresh() {
 
   // --- Persist Filter Settings ---
   if ((dr = vis(5)) >= 0) {
-    if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
-    else { wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
+    if (!workspace_ok) { wattron(window_, kAttrGrey); }
+    else { wattron(window_, kAttrBoldBlue); }
     mvwprintw(window_, dr, 3, "Persist Filter Settings");
-    if (!workspace_ok) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
-    else { wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
+    if (!workspace_ok) { wattroff(window_, kAttrGrey); }
+    else { wattroff(window_, kAttrBoldBlue); }
   }
 
   if ((dr = vis(6)) >= 0) {
@@ -143,11 +143,11 @@ void PrefsPanel::refresh() {
 
   // --- Persist Logs to Disk ---
   if ((dr = vis(9)) >= 0) {
-    if (!workspace_ok) { wattron(window_, COLOR_PAIR(CP_GREY)); }
-    else { wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
+    if (!workspace_ok) { wattron(window_, kAttrGrey); }
+    else { wattron(window_, kAttrBoldBlue); }
     mvwprintw(window_, dr, 3, "Persist Logs to Disk");
-    if (!workspace_ok) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
-    else { wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
+    if (!workspace_ok) { wattroff(window_, kAttrGrey); }
+    else { wattroff(window_, kAttrBoldBlue); }
   }
 
   if ((dr = vis(10)) >= 0) {
@@ -185,11 +185,11 @@ void PrefsPanel::refresh() {
   std::string rotate_str = formatSize(pending_.log_rotate_size);
 
   if ((dr = vis(13)) >= 0) {
-    if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
-    else { wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
+    if (!size_enabled) { wattron(window_, kAttrGrey); }
+    else { wattron(window_, kAttrBoldBlue); }
     mvwprintw(window_, dr, 3, "Log Rotate Size");
-    if (!size_enabled) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
-    else { wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
+    if (!size_enabled) { wattroff(window_, kAttrGrey); }
+    else { wattroff(window_, kAttrBoldBlue); }
   }
 
   if ((dr = vis(14)) >= 0) {
@@ -210,11 +210,11 @@ void PrefsPanel::refresh() {
   std::string max_str = formatSize(pending_.log_max_size);
 
   if ((dr = vis(16)) >= 0) {
-    if (!size_enabled) { wattron(window_, COLOR_PAIR(CP_GREY)); }
-    else { wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
+    if (!size_enabled) { wattron(window_, kAttrGrey); }
+    else { wattron(window_, kAttrBoldBlue); }
     mvwprintw(window_, dr, 3, "Max Total Log Size");
-    if (!size_enabled) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
-    else { wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE)); }
+    if (!size_enabled) { wattroff(window_, kAttrGrey); }
+    else { wattroff(window_, kAttrBoldBlue); }
   }
 
   if ((dr = vis(17)) >= 0) {
@@ -227,7 +227,7 @@ void PrefsPanel::refresh() {
     if (ms_focused) { wattroff(window_, A_REVERSE); }
     if (!ms_focused) { wattron(window_, COLOR_PAIR(CP_GREY)); }
     mvwprintw(window_, dr, 20, "< >");
-    if (!ms_focused) { wattroff(window_, COLOR_PAIR(CP_GREY)); }
+    if (!ms_focused) { wattroff(window_, kAttrGrey); }
   }
 
   drawScrollBar(getContentSize(), getContentHeight(), 2, width_ - 1);
