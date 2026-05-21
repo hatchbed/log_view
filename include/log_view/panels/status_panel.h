@@ -46,13 +46,14 @@ class StatusPanel : public PanelInterface {
   virtual void refresh();
 
   virtual void setConnected(bool connected) { connected_ = connected; }
-  virtual void setRosTime(const ros::Time& time) { ros_time_ = time; }
+  virtual void setSimTime(const ros::Time& time) { sim_time_ = time; has_sim_time_ = true; }
   virtual void setSystemTime(const ros::WallTime& time) { system_time_ = time; }
 
   protected:
   bool connected_ = false;
-  ros::Time ros_time_ = ros::Time(0);
+  ros::Time sim_time_ = ros::Time(0);
   ros::WallTime system_time_ = ros::WallTime(0);
+  bool has_sim_time_ = false;
   LogStorePtr logs_;
   LogFilter& filter_;
 };

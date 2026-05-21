@@ -65,7 +65,7 @@ public:
   bool exited() const;
 
   void setConnected(bool connected);
-  void setRosTime(const ros::Time& time);
+  void setSimTime(const ros::Time& time);
   void setSystemTime(const ros::WallTime& time);
 
   void update();
