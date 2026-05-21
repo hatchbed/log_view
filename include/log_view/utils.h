@@ -33,11 +33,14 @@
 #include <string>
 #include <vector>
 
+#include <curses.h>
+
 namespace log_view {
 
 enum Color {
   CP_DEFAULT, CP_RED, CP_YELLOW, CP_GREY, CP_DEFAULT_CYAN, CP_DEFAULT_GREY,
-  CP_ANSI_BLUE,
+  CP_ANSI_BLACK, CP_ANSI_RED, CP_ANSI_GREEN, CP_ANSI_YELLOW,
+  CP_ANSI_BLUE, CP_ANSI_MAGENTA, CP_ANSI_CYAN, CP_ANSI_WHITE,
   CP_BRIGHT_BLUE  // color 12 on 16+ color terminals; falls back to COLOR_BLUE on 8-color
 };
 
@@ -62,6 +65,8 @@ void toClipboard(const std::string& text);
 
 std::string levelName(uint8_t level);
 
+void printStyledAt(WINDOW* win, int y, int x, attr_t attr, const char* fmt, ...);
+
 std::string stripAnsi(const std::string& raw);
 std::vector<AnsiSegment> parseAnsiSegments(const std::string& raw);
 
@@ -73,6 +78,12 @@ extern attr_t kAttrGrey;      // replaces COLOR_PAIR(CP_GREY) - dim on 8-color t
 extern attr_t kAttrGreyBg;    // replaces COLOR_PAIR(CP_DEFAULT_GREY) - reverse on 8-color terminals
 extern attr_t kAttrBoldBlue;  // A_BOLD | COLOR_PAIR(CP_ANSI_BLUE) - section headers
 
+
+// Maps ANSI color index (0-7) to the corresponding CP_ANSI_* color pair.
+inline constexpr int kAnsiPairs[] = {
+  CP_ANSI_BLACK, CP_ANSI_RED,     CP_ANSI_GREEN,   CP_ANSI_YELLOW,
+  CP_ANSI_BLUE,  CP_ANSI_MAGENTA, CP_ANSI_CYAN,    CP_ANSI_WHITE
+};
 
 }  // namespace log_view
 

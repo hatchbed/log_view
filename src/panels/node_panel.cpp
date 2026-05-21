@@ -41,9 +41,7 @@ void NodePanel::refresh() {
   cleared_ = false;
 
   box(window_, 0, 0);
-  if (focus()) { wattron(window_, A_BOLD); }
-  mvwprintw(window_, 0, width_ / 2 - 3, " nodes ");
-  if (focus()) { wattroff(window_, A_BOLD); }
+  printStyledAt(window_, 0, width_ / 2 - 3, focus() ? A_BOLD : 0, " nodes ");
 
   size_t start_idx = cursor;
   if (start_idx >= getContentHeight()) {
@@ -80,13 +78,7 @@ void NodePanel::refresh() {
 
     std::string text = name + ": " + std::to_string(node_data.count);
 
-    if (selected) {
-      wattron(window_, A_REVERSE);
-    }
-
-    if (hover) {
-      wattron(window_, A_BOLD);
-    }
+    attr_t attr = (selected ? A_REVERSE : 0) | (hover ? A_BOLD : 0);
 
     max_length_ = std::max(max_length_, text.size());
 
@@ -103,27 +95,15 @@ void NodePanel::refresh() {
       cropped = true;
     }
 
-    mvwprintw(window_, i + 1, 1, text.c_str());
+    printStyledAt(window_, i + 1, 1, attr, "%s", text.c_str());
 
-    if (hover) {
-      wattroff(window_, A_BOLD);
-    }
-
-    if (selected) {
-      wattroff(window_, A_REVERSE);
-    }
-
-    if (shift_  > 0) {
+    if (shift_ > 0) {
       mvwprintw(window_, i + 1, 1, "  ");
-      wattron(window_, A_REVERSE);
-      mvwprintw(window_, i + 1, 1, "<");
-      wattroff(window_, A_REVERSE);
+      printStyledAt(window_, i + 1, 1, A_REVERSE, "<");
     }
     if (cropped) {
       mvwprintw(window_, i + 1, getContentWidth() - 1, "  ");
-      wattron(window_, A_REVERSE);
-      mvwprintw(window_, i + 1, getContentWidth(), ">");
-      wattroff(window_, A_REVERSE);
+      printStyledAt(window_, i + 1, getContentWidth(), A_REVERSE, ">");
     }
 
     {

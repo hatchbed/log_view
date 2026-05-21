@@ -30,9 +30,7 @@
 namespace log_view {
 
 void ExcludePanel::refresh() {
-  if (focus()) { wattron(window_, A_BOLD); }
-  mvwprintw(window_, 0, 0, "exclude: ");
-  if (focus()) { wattroff(window_, A_BOLD); }
+  printStyledAt(window_, 0, 0, focus() ? A_BOLD : 0, "exclude: ");
   mvwprintw(window_, 0, inputOffset(), "%s", input_text_.c_str());
 }
 

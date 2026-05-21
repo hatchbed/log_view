@@ -27,6 +27,7 @@
 
 #include <log_view/utils.h>
 
+#include <cstdarg>
 #include <cstdlib>
 #include <cwchar>
 
@@ -302,6 +303,16 @@ std::string levelName(uint8_t level) {
   if (level == rosgraph_msgs::Log::ERROR) { return "ERROR"; }
   if (level == rosgraph_msgs::Log::FATAL) { return "FATAL"; }
   return std::to_string(level);
+}
+
+void printStyledAt(WINDOW* win, int y, int x, attr_t attr, const char* fmt, ...) {
+  if (attr) wattron(win, attr);
+  wmove(win, y, x);
+  va_list args;
+  va_start(args, fmt);
+  vw_printw(win, fmt, args);
+  va_end(args);
+  if (attr) wattroff(win, attr);
 }
 
 void toClipboard(const std::string& text) {
