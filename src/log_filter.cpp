@@ -32,7 +32,7 @@
 
 namespace log_view {
 
-LogFilter::LogFilter(LogStorePtr& logs) :
+LogFilter::LogFilter(const LogStorePtr& logs) :
   logs_(logs)
 {}
 
@@ -222,7 +222,7 @@ void LogFilter::idleProcess() {
   }
 
   if (search_cursor_ == -1 && !search_.empty() && !log_indices_.empty()) {
-    if ((search_direction_ == SEARCH_BOTH || search_direction_ == SEARCH_FWD) &&
+    if ((search_direction_ == SearchDirection::SEARCH_BOTH || search_direction_ == SearchDirection::SEARCH_FWD) &&
       search_cursor_fwd_ >= 0) {
       size_t max_idx = search_cursor_fwd_ + 1000;
       for (size_t i = search_cursor_fwd_; i < max_idx && i < log_indices_.size(); i++) {
@@ -237,7 +237,7 @@ void LogFilter::idleProcess() {
     }
 
     if (search_cursor_ == -1 &&
-      (search_direction_ == SEARCH_BOTH || search_direction_ == SEARCH_REV) &&
+      (search_direction_ == SearchDirection::SEARCH_BOTH || search_direction_ == SearchDirection::SEARCH_REV) &&
       search_cursor_rev_ >= 0) {
       int64_t min_idx = search_cursor_rev_ - 1000;
       for (int64_t i = search_cursor_rev_; i > min_idx && i >= 0; i--) {
@@ -267,11 +267,12 @@ const LogEntry& LogFilter::getEntry(int64_t index) const {
   }
 
   auto& entry = log_indices_[index];
-  if (entry.index >= logs_->logs().size()) {
+  auto& all_logs = logs_->logs();
+  if (entry.index >= all_logs.size()) {
     return dummy_entry_;
   }
 
-  return logs_->logs()[entry.index];
+  return all_logs[entry.index];
 }
 
 void LogFilter::clearSelect() {
@@ -299,7 +300,7 @@ int64_t LogFilter::getSelectEnd() const {
 void LogFilter::search(const std::string& pattern) {
   search_ = pattern;
 
-  search_direction_ = SEARCH_BOTH;
+  search_direction_ = SearchDirection::SEARCH_BOTH;
   search_cursor_ = -1;
 
   int64_t cursor = cursor_;
@@ -313,7 +314,7 @@ void LogFilter::search(const std::string& pattern) {
 }
 
 void LogFilter::nextMatch() {
-  search_direction_ = SEARCH_FWD;
+  search_direction_ = SearchDirection::SEARCH_FWD;
   search_cursor_ = -1;
 
   int64_t cursor = cursor_;
@@ -326,7 +327,7 @@ void LogFilter::nextMatch() {
 }
 
 void LogFilter::prevMatch() {
-  search_direction_ = SEARCH_REV;
+  search_direction_ = SearchDirection::SEARCH_REV;
   search_cursor_ = -1;
 
   int64_t cursor = cursor_;

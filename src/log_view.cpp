@@ -330,7 +330,7 @@ void LogView::update() {
   if (!key_used && !mouse_down_) {
     if (ch == KEY_RESIZE) {
       refreshLayout();
-    } else if (/*ch == KEY_ESC || */ch == ctrl('q') || ch == ctrl('c')) {
+    } else if (ch == ctrl('q') || ch == ctrl('c')) {
       exited_ = true;
     } else if (ch == '\t') {
       tab();

@@ -57,6 +57,6 @@ class DetailsPanel : public PanelInterface {
   int64_t cursor_ = -1;
   int64_t last_selected_ = -2;
 };
-typedef std::shared_ptr<DetailsPanel> DetailsPanelPtr;
+using DetailsPanelPtr = std::shared_ptr<DetailsPanel>;
 
 }  // namespace log_view

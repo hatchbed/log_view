@@ -60,7 +60,7 @@ class NodePanel : public PanelInterface {
 
   LogFilter& filter_;
 };
-typedef std::shared_ptr<NodePanel> NodePanelPtr;
+using NodePanelPtr = std::shared_ptr<NodePanel>;
 
 }  // namespace log_view
 

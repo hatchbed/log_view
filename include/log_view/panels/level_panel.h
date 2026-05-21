@@ -63,7 +63,7 @@ class LevelPanel : public PanelInterface {
   std::function<bool()> show_invert_hint_;
   std::function<bool()> help_open_;
 };
-typedef std::shared_ptr<LevelPanel> LevelPanelPtr;
+using LevelPanelPtr = std::shared_ptr<LevelPanel>;
 
 }  // namespace log_view
 
