@@ -25,6 +25,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <atomic>
+
 #include <log_view/log_store.h>
 #include <log_view/log_view.h>
 #include <rosgraph_msgs/Log.h>
@@ -37,7 +39,7 @@ void handleSigint(int sig);
 
 class LogViewer {
   public:
-  static bool exit;
+  static std::atomic<bool> exit;
 
   LogViewer() :
     logs_(std::make_shared<log_view::LogStore>()),
@@ -87,7 +89,7 @@ class LogViewer {
     log_view::LogStorePtr logs_;
     log_view::LogView view_;
 };
-bool LogViewer::exit = false;
+std::atomic<bool> LogViewer::exit{false};
 
 void handleSigint(int sig)
 {
@@ -97,8 +99,7 @@ void handleSigint(int sig)
 int main(int argc, char **argv)
 {
   // prevent ncurses from pausing for 1 second on ESC key
-  char escape_var[] = "ESCDELAY=0";
-  putenv(escape_var);
+  setenv("ESCDELAY", "0", 1);
   ros::init(argc, argv, "log_viewer", ros::init_options::AnonymousName | ros::init_options::NoRosout);
 
   LogViewer log_viewer;

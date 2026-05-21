@@ -248,7 +248,7 @@ bool PrefsPanel::handleKey(int key) {
     return false;
   }
 
-  if (key == 27 /* ESC */) {
+  if (key == 27 /* ESC */ || key == ctrl('k')) {
     pending_ = original_;
     if (prefs_.timestamp_format != original_.timestamp_format) {
       prefs_.timestamp_format = original_.timestamp_format;

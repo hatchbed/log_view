@@ -41,7 +41,9 @@ void NodePanel::refresh() {
   cleared_ = false;
 
   box(window_, 0, 0);
+  if (focus()) { wattron(window_, A_BOLD); }
   mvwprintw(window_, 0, width_ / 2 - 3, " nodes ");
+  if (focus()) { wattroff(window_, A_BOLD); }
 
   size_t start_idx = cursor;
   if (start_idx >= getContentHeight()) {
@@ -155,8 +157,7 @@ bool NodePanel::handleKey(int key) {
       filter_.selectAllNodes();
 
       return true;
-  }
-  else if (key == ctrl('i')) {
+  } else if (key == 'i' && focus()) {
       filter_.invertNodes();
 
       return true;
