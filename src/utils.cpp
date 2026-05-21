@@ -37,8 +37,9 @@
 
 namespace log_view {
 
-attr_t kAttrGrey   = 0;
-attr_t kAttrGreyBg = 0;
+attr_t kAttrGrey     = 0;
+attr_t kAttrGreyBg   = 0;
+attr_t kAttrBoldBlue = 0;
 
 std::string toString(double val, int precision) {
   std::ostringstream ss;
