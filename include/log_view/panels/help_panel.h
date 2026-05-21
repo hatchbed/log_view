@@ -65,6 +65,6 @@ class HelpPanel : public PanelInterface {
   size_t longest_line_ = 0;
   int64_t cursor_ = -1;
 };
-typedef std::shared_ptr<HelpPanel> HelpPanelPtr;
+using HelpPanelPtr = std::shared_ptr<HelpPanel>;
 
 }  // namespace log_view

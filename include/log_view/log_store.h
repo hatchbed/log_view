@@ -64,6 +64,6 @@ private:
   mutable std::mutex mutex_;
   LogWriter* writer_ = nullptr;
 };
-typedef std::shared_ptr<LogStore> LogStorePtr;
+using LogStorePtr = std::shared_ptr<LogStore>;
 
 }  // namespace log_view

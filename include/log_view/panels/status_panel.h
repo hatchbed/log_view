@@ -53,6 +53,6 @@ class StatusPanel : public PanelInterface {
   LogStorePtr logs_;
   LogFilter& filter_;
 };
-typedef std::shared_ptr<StatusPanel> StatusPanelPtr;
+using StatusPanelPtr = std::shared_ptr<StatusPanel>;
 
 }  // namespace log_view

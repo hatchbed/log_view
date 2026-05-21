@@ -72,6 +72,6 @@ class LogPanel : public PanelInterface {
   bool filled_ = false;
   mutable int64_t first_stamp_ns_ = -1;
 };
-typedef std::shared_ptr<LogPanel> LogPanelPtr;
+using LogPanelPtr = std::shared_ptr<LogPanel>;
 
 }  // namespace log_view
