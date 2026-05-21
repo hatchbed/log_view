@@ -99,13 +99,14 @@ public:
   const std::map<std::string, NodeData>& nodes() const { return nodes_; }
   size_t filteredCount() const;
 
-  int64_t search_cursor_ = -1;
-  int64_t search_cursor_fwd_ = -1;
-  int64_t search_cursor_rev_ = -1;
-
-
 private:
   bool accepted(const LogEntry& entry, bool new_entry = false);
+  void cleanSessionBoundaries();
+  void removeAtIndex(size_t pos);
+  void updatePatternList(
+      const std::string& raw,
+      std::string& stored_string,
+      std::vector<std::string>& stored_list);
 
   LogStorePtr logs_;
   LogEntry dummy_entry_;
