@@ -85,8 +85,9 @@ void LogView::init() {
   init_pair(CP_ANSI_CYAN,    COLOR_CYAN,    -1);
   init_pair(CP_ANSI_WHITE,   COLOR_WHITE,   -1);
   init_pair(CP_BRIGHT_BLUE,  (COLORS >= 16) ? 12 : COLOR_BLUE, -1);
-  kAttrGrey   = (COLORS >= 16) ? COLOR_PAIR(CP_GREY)         : static_cast<attr_t>(A_DIM);
-  kAttrGreyBg = (COLORS >= 16) ? COLOR_PAIR(CP_DEFAULT_GREY) : static_cast<attr_t>(A_REVERSE);
+  kAttrGrey     = (COLORS >= 16) ? COLOR_PAIR(CP_GREY)         : static_cast<attr_t>(A_DIM);
+  kAttrGreyBg   = (COLORS >= 16) ? COLOR_PAIR(CP_DEFAULT_GREY) : static_cast<attr_t>(A_REVERSE);
+  kAttrBoldBlue = A_BOLD | COLOR_PAIR(CP_ANSI_BLUE);
   noecho();
   curs_set(0);
   raw();
