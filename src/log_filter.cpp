@@ -36,40 +36,26 @@ LogFilter::LogFilter(const LogStorePtr& logs) :
   logs_(logs)
 {}
 
-void LogFilter::setFilter(const std::string& filter) {
-  filter_string_ = filter;
-  auto filter_list = split(filter, ';');
-  bool changed = filter_list.size() != filter_list_.size();
-
-  for (size_t i = 0; i < filter_list_.size() && !changed; i++) {
-    if (filter_list_[i] != filter_list[i]) {
-      changed = true;
-    }
-  }
-
-  filter_list_ = filter_list;
-
+void LogFilter::updatePatternList(
+    const std::string& raw,
+    std::string& stored_string,
+    std::vector<std::string>& stored_list)
+{
+  auto new_list = split(raw, ';');
+  bool changed = new_list != stored_list;
+  stored_string = raw;
+  stored_list = std::move(new_list);
   if (changed) {
     reset();
   }
 }
 
+void LogFilter::setFilter(const std::string& filter) {
+  updatePatternList(filter, filter_string_, filter_list_);
+}
+
 void LogFilter::setExclude(const std::string& exclude) {
-  exclude_string_ = exclude;
-  auto exclude_list = split(exclude, ';');
-  bool changed = exclude_list.size() != exclude_list_.size();
-
-  for (size_t i = 0; i < exclude_list_.size() && !changed; i++) {
-    if (exclude_list_[i] != exclude_list[i]) {
-      changed = true;
-    }
-  }
-
-  exclude_list_ = exclude_list;
-
-  if (changed) {
-    reset();
-  }
+  updatePatternList(exclude, exclude_string_, exclude_list_);
 }
 
 void LogFilter::setDebugLevel(bool enable) {
