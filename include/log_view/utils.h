@@ -64,6 +64,8 @@ std::vector<size_t> find(
 
 void toClipboard(const std::string& text);
 
+std::string levelName(uint8_t level);
+
 std::string stripAnsi(const std::string& raw);
 std::vector<AnsiSegment> parseAnsiSegments(const std::string& raw);
 

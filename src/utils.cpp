@@ -31,6 +31,8 @@
 #include <cstdlib>
 #include <cwchar>
 
+#include <rcl_interfaces/msg/log.hpp>
+
 #include <sstream>
 
 namespace log_view {
@@ -288,6 +290,15 @@ std::string utf8TruncateDisplayCols(const std::string& s, size_t cols) {
     p += n;
   }
   return s.substr(0, static_cast<size_t>(p - s.c_str()));
+}
+
+std::string levelName(uint8_t level) {
+  if (level == rcl_interfaces::msg::Log::DEBUG) { return "DEBUG"; }
+  if (level == rcl_interfaces::msg::Log::INFO)  { return "INFO"; }
+  if (level == rcl_interfaces::msg::Log::WARN)  { return "WARN"; }
+  if (level == rcl_interfaces::msg::Log::ERROR) { return "ERROR"; }
+  if (level == rcl_interfaces::msg::Log::FATAL) { return "FATAL"; }
+  return std::to_string(level);
 }
 
 void toClipboard(const std::string& text) {
