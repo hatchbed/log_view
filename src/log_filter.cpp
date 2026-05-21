@@ -245,7 +245,8 @@ void LogFilter::idleProcess() {
   }
 
   if (search_cursor_ == -1 && !search_.empty() && !log_indices_.empty()) {
-    if ((search_direction_ == SearchDirection::SEARCH_BOTH || search_direction_ == SearchDirection::SEARCH_FWD) &&
+    if ((search_direction_ == SearchDirection::SEARCH_BOTH ||
+         search_direction_ == SearchDirection::SEARCH_FWD) &&
       search_cursor_fwd_ >= 0) {
       size_t max_idx = search_cursor_fwd_ + 1000;
       for (size_t i = search_cursor_fwd_; i < max_idx && i < log_indices_.size(); i++) {
@@ -260,7 +261,8 @@ void LogFilter::idleProcess() {
     }
 
     if (search_cursor_ == -1 &&
-      (search_direction_ == SearchDirection::SEARCH_BOTH || search_direction_ == SearchDirection::SEARCH_REV) &&
+      (search_direction_ == SearchDirection::SEARCH_BOTH ||
+       search_direction_ == SearchDirection::SEARCH_REV) &&
       search_cursor_rev_ >= 0) {
       int64_t min_idx = search_cursor_rev_ - 1000;
       for (int64_t i = search_cursor_rev_; i > min_idx && i >= 0; i--) {

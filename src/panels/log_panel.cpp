@@ -331,21 +331,7 @@ std::string LogPanel::getPrefix(const LogEntry& entry, size_t line) const {
       timestamp = toString(entry.stamp.seconds(), 4);
       break;
   }
-  std::string text = timestamp + " [";
-  if (entry.level == rcl_interfaces::msg::Log::DEBUG) {
-    text += "DEBUG";
-  } else if (entry.level == rcl_interfaces::msg::Log::INFO) {
-    text += "INFO";
-  } else if (entry.level == rcl_interfaces::msg::Log::WARN) {
-    text += "WARN";
-  } else if (entry.level == rcl_interfaces::msg::Log::ERROR) {
-    text += "ERROR";
-  } else if (entry.level == rcl_interfaces::msg::Log::FATAL) {
-    text += "FATAL";
-  } else {
-    text += std::to_string(entry.level);
-  }
-  text += "] ";
+  std::string text = timestamp + " [" + levelName(entry.level) + "] ";
   if (line > 0) {
     text = std::string(text.size(), ' ');
   }

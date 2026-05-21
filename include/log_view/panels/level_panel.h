@@ -30,6 +30,7 @@
 
 #include <functional>
 #include <memory>
+#include <utility>
 
 #include <log_view/log_filter.h>
 #include <log_view/panel_interface.h>
