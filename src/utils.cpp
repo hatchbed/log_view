@@ -58,7 +58,7 @@ std::vector<std::string> split(const std::string &text, char sep) {
   if (end != start) {
     auto token = text.substr(start);
     if (!token.empty()) {
-      tokens.push_back(text.substr(start));
+      tokens.push_back(token);
     }
   }
   return tokens;

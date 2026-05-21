@@ -40,6 +40,7 @@ const std::deque<LogEntry>& LogStore::logs() {
 }
 
 size_t LogStore::size() const {
+  std::lock_guard<std::mutex> lock(mutex_);
   return logs_.size();
 }
 

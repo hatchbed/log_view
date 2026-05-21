@@ -100,6 +100,6 @@ private:
   static constexpr int kRotateSizeCount = 6;
   static constexpr int kMaxSizeCount    = 6;
 };
-typedef std::shared_ptr<PrefsPanel> PrefsPanelPtr;
+using PrefsPanelPtr = std::shared_ptr<PrefsPanel>;
 
 }  // namespace log_view
