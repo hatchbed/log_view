@@ -156,9 +156,9 @@ void DetailsPanel::refresh() {
     {
       int dr = row - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+        wattron(window_, kAttrBoldBlue);
         mvwaddnstr(window_, dr, 1, key.c_str(), std::min(static_cast<int>(key.size()), max_width));
-        wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+        wattroff(window_, kAttrBoldBlue);
         int val_col   = 1 + static_cast<int>(key.size());
         int val_width = max_width - static_cast<int>(key.size());
         if (val_width > 0) {
@@ -184,9 +184,9 @@ void DetailsPanel::refresh() {
     for (int i = 0; i < 6; i++) {
       int dr = (i + 1) - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+        wattron(window_, kAttrBoldBlue);
         mvwprintw(window_, dr, 1, "%s", labels[i]);
-        wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+        wattroff(window_, kAttrBoldBlue);
       }
     }
   } else {
@@ -200,9 +200,9 @@ void DetailsPanel::refresh() {
     {
       int dr = row - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        wattron(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+        wattron(window_, kAttrBoldBlue);
         mvwprintw(window_, dr, 1, "message: ");
-        wattroff(window_, A_BOLD | COLOR_PAIR(CP_ANSI_BLUE));
+        wattroff(window_, kAttrBoldBlue);
       }
     }
     row++;
