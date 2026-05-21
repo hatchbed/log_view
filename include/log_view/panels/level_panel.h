@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include <log_view/log_filter.h>
@@ -50,8 +51,18 @@ class LevelPanel : public PanelInterface {
   virtual void toggleAllNodes();
   virtual bool handleMouse(const MEVENT& event);
 
+  void setShowInvertHintCallback(std::function<bool()> cb) {
+    show_invert_hint_ = std::move(cb);
+  }
+
+  void setHelpOpenCallback(std::function<bool()> cb) {
+    help_open_ = std::move(cb);
+  }
+
   protected:
   LogFilter& filter_;
+  std::function<bool()> show_invert_hint_;
+  std::function<bool()> help_open_;
 };
 typedef std::shared_ptr<LevelPanel> LevelPanelPtr;
 

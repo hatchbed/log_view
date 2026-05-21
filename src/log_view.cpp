@@ -128,6 +128,10 @@ void LogView::init() {
     LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
   node_panel_->hide(true);
   panels_.push_back(node_panel_);
+  level_panel_->setShowInvertHintCallback([this]() {
+    return node_panel_->visible() && node_panel_->focus() &&
+           !help_panel_->visible() && !prefs_panel_->visible();
+  });
 
   details_panel_ = std::make_shared<DetailsPanel>(
     LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
@@ -137,6 +141,9 @@ void LogView::init() {
   help_panel_ = std::make_shared<HelpPanel>(24, COLS - 8, 2, 4);
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
+  level_panel_->setHelpOpenCallback([this]() {
+    return help_panel_->visible();
+  });
 
   {
     int pw = prefsPanelWidth();
@@ -322,7 +329,6 @@ void LogView::update() {
     for (size_t i = 1; i <= panels_.size(); i++) {
       key_used = panels_[panels_.size() - i]->handleNavigation(ch);
       if (key_used) {
-        level_panel_->refresh();
         break;
       }
     }
@@ -365,7 +371,7 @@ void LogView::update() {
       if (filter_panel_->focus()) {
         unfocusOthers(filter_panel_);
       } else {
-        focusNext(exclude_panel_);
+        focusNext(filter_panel_);
       }
       refreshLayout();
     } else if (ch == ctrl('h')) {
@@ -419,6 +425,7 @@ void LogView::update() {
     details_panel_->refresh();
   }
 
+  level_panel_->refresh();
   status_panel_->refresh();
 
   if (help_panel_->visible()) {

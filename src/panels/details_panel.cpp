@@ -139,7 +139,9 @@ void DetailsPanel::refresh() {
   }
 
   box(window_, 0, 0);
+  if (focus()) { wattron(window_, A_BOLD); }
   mvwprintw(window_, 0, width_ / 2 - 3, " details ");
+  if (focus()) { wattroff(window_, A_BOLD); }
 
   int max_width = getContentWidth();
 

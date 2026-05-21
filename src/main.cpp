@@ -28,6 +28,7 @@
 
 #include <csignal>
 
+#include <atomic>
 #include <chrono>
 #include <thread>
 
@@ -42,7 +43,7 @@ void handleSigint(int sig);
 
 class LogViewer : public rclcpp::Node {
   public:
-  static bool exit;
+  static std::atomic<bool> exit;
 
   LogViewer() :
     rclcpp::Node("log_viewer"),
@@ -83,19 +84,17 @@ class LogViewer : public rclcpp::Node {
     log_view::LogStorePtr logs_;
     log_view::LogView view_;
 };
-bool LogViewer::exit = false;
+std::atomic<bool> LogViewer::exit{false};
 
 void handleSigint(int sig)
 {
   LogViewer::exit = true;
-  rclcpp::shutdown();
 }
 
 int main(int argc, char ** argv)
 {
   // prevent ncurses from pausing for 1 second on ESC key
-  char escape_var[] = "ESCDELAY=0";
-  putenv(escape_var);
+  setenv("ESCDELAY", "0", 1);
 
   rclcpp::init(argc, argv);
   signal(SIGINT, handleSigint);

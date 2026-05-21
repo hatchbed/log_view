@@ -45,7 +45,10 @@ void SearchPanel::refresh() {
 
     wattroff(window_, kAttrGreyBg);
   } else {
-    mvwprintw(window_, 0, 0, "search: %s", input_text_.c_str());
+    if (focus()) { wattron(window_, A_BOLD); }
+    mvwprintw(window_, 0, 0, "search: ");
+    if (focus()) { wattroff(window_, A_BOLD); }
+    mvwprintw(window_, 0, inputOffset(), "%s", input_text_.c_str());
   }
 }
 
