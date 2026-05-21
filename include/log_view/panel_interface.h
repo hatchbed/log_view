@@ -113,6 +113,6 @@ class PanelInterface {
   size_t max_length_ = 0;
   int shift_ = 0;
 };
-typedef std::shared_ptr<PanelInterface> PanelInterfacePtr;
+using PanelInterfacePtr = std::shared_ptr<PanelInterface>;
 
 }  // namespace log_view

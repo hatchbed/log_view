@@ -72,7 +72,6 @@ public:
 private:
   void refreshLayout();
 
-  size_t viewSize() const;
   int prefsPanelWidth() const;
 
   void tab();
@@ -90,7 +89,6 @@ private:
   bool mouse_down_ = false;
   bool confirm_clear_ = false;
 
-  bool node_select_ = true;
   bool log_scroll_ = false;
 
   WINDOW* confirm_win_ = nullptr;

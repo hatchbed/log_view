@@ -55,6 +55,6 @@ class SearchPanel : public PanelInterface {
 
   bool show_results_ = false;
 };
-typedef std::shared_ptr<SearchPanel> SearchPanelPtr;
+using SearchPanelPtr = std::shared_ptr<SearchPanel>;
 
 }  // namespace log_view
