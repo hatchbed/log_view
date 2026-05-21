@@ -36,6 +36,7 @@
 #include <log_view/log_view.h>
 #include <rcl_interfaces/msg/log.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <rosgraph_msgs/msg/clock.hpp>
 
 using namespace std::chrono_literals;
 
@@ -56,12 +57,20 @@ class LogViewer : public rclcpp::Node {
     view_.init();
     sub_ = create_subscription<rcl_interfaces::msg::Log>(
       "/rosout", 10000, std::bind(&LogViewer::handleMsg, this, std::placeholders::_1));
+    clock_sub_ = create_subscription<rosgraph_msgs::msg::Clock>(
+      "/clock", rclcpp::SensorDataQoS(),
+      [this](const rosgraph_msgs::msg::Clock::SharedPtr msg) {
+        sim_time_ns_ = rclcpp::Time(msg->clock.sec, msg->clock.nanosec, RCL_ROS_TIME).nanoseconds();
+        has_sim_time_ = true;
+      });
 
     std::thread ros_thread([&](){ rclcpp::spin(get_node_base_interface()); });
 
     while (!exit && !view_.exited()) {
       view_.setSystemTime(system_clock.now());
-      view_.setRosTime(now());
+      if (has_sim_time_) {
+        view_.setSimTime(rclcpp::Time(sim_time_ns_.load(), RCL_ROS_TIME));
+      }
       view_.update();
       std::this_thread::sleep_for(30ms);
     }
@@ -80,6 +89,9 @@ class LogViewer : public rclcpp::Node {
 
   private:
     rclcpp::Subscription<rcl_interfaces::msg::Log>::SharedPtr sub_;
+    rclcpp::Subscription<rosgraph_msgs::msg::Clock>::SharedPtr clock_sub_;
+    std::atomic<int64_t> sim_time_ns_{0};
+    std::atomic<bool> has_sim_time_{false};
 
     log_view::LogStorePtr logs_;
     log_view::LogView view_;

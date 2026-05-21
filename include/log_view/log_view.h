@@ -64,7 +64,7 @@ public:
 
   bool exited() const;
 
-  void setRosTime(const rclcpp::Time& time);
+  void setSimTime(const rclcpp::Time& time);
   void setSystemTime(const rclcpp::Time& time);
 
   void update();
