@@ -27,6 +27,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <log_view/panel_interface.h>
+#include <log_view/utils.h>
 
 #include <cmath>
 
@@ -237,9 +238,7 @@ void PanelInterface::drawScrollBar(size_t count, int height, int y, int x) {
     float percent = std::max(0.0f, static_cast<float>((cursor - height)) / (count - height));
     int scroll_loc = std::round(percent * (height - 1));
 
-    wattron(window_, A_REVERSE);
-    mvwprintw(window_, y + scroll_loc, x, " ");
-    wattroff(window_, A_REVERSE);
+    printStyledAt(window_, y + scroll_loc, x, A_REVERSE, " ");
   } else {
     int size = 2 * height - count;
     cursor = std::max(static_cast<int64_t>(0), cursor - height);
