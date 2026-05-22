@@ -71,6 +71,10 @@ class LogViewer {
       view_.update();
     }
     view_.close();
+
+    if (connected && ros::ok()) {
+      ros::shutdown();
+    }
   }
 
   void handleMsg(const rosgraph_msgs::LogConstPtr& msg) {
