@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(log_view)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   rosgraph_msgs
@@ -57,7 +60,6 @@ target_link_libraries(${PROJECT_NAME}
 add_executable(log_viewer src/main.cpp)
 target_link_libraries(log_viewer
   ${PROJECT_NAME}
-  rosgraph_msgs::rosgraph_msgs__rosidl_typesupport_cpp
 )
 
 #############
