@@ -64,7 +64,7 @@ void LogStore::addEntry(const rosgraph_msgs::LogConstPtr& msg) {
 
 void LogStore::addEntry(const LogEntry& entry) {
   std::lock_guard<std::mutex> lock(mutex_);
-  logs_.push_back(entry);
+  new_logs_.push_back(entry);
 }
 
 void LogStore::clear() {

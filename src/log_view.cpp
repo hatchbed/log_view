@@ -76,6 +76,8 @@ void LogView::init() {
   init_pair(CP_GREY, 8, -1);
   init_pair(CP_DEFAULT_CYAN, -1, COLOR_CYAN);
   init_pair(CP_DEFAULT_GREY, -1, 8);
+  init_pair(CP_ANSI_BLUE,    COLOR_BLUE,  -1);
+  init_pair(CP_BRIGHT_BLUE,  (COLORS >= 16) ? 12 : COLOR_BLUE, -1);
   noecho();
   curs_set(0);
   raw();
@@ -151,6 +153,9 @@ void LogView::init() {
       logs_->setWriter(log_writer_.get());
       log_writer_->start();
     }
+    log_panel_->forceRefresh();
+  });
+  prefs_panel_->setOnPreview([this]() {
     log_panel_->forceRefresh();
   });
   panels_.push_back(prefs_panel_);
