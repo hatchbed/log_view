@@ -114,7 +114,7 @@ bool HelpPanel::handleKey(int key) {
     return false;
   }
 
-  if (key == ctrl('h')) {
+  if (key == ctrl('h') || key == 27) {
     hide(visible());
   } else if (key == KEY_RESIZE || key == ctrl('q') || key == ctrl('c')
              || key == KEY_UP || key == KEY_DOWN
