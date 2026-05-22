@@ -2,6 +2,10 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fixed help panel to scroll vertically when insufficient space is available.
+
 0.1.4 (2026-05-05)
 ------------------
 * Scope log and preference storage to the active catkin workspace via ``CMAKE_PREFIX_PATH`` (stored under ``<workspace>/.log_view/``).

@@ -443,7 +443,8 @@ void LogView::refreshLayout() {
   details_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
     COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
-  help_panel_->resize(24, COLS - 8, 2, 4);
+  int help_height = std::min(24, std::max(5, LINES - 4));
+  help_panel_->resize(help_height, COLS - 8, 2, 4);
   int pw = prefsPanelWidth();
   prefs_panel_->resize(23, pw, std::max(0, LINES / 2 - 11), std::max(0, COLS / 2 - pw / 2));
 }
