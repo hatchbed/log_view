@@ -293,6 +293,9 @@ void LogPanel::endSelect(int row) {
 }
 
 int LogPanel::getContentWidth() const {
+  if (right_edge_ > 0) {
+    return right_edge_;
+  }
   int width = width_;
   if (getContentSize() >= getContentHeight()) {
     width--;
@@ -425,24 +428,44 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
 
 
   if (matched) {
-    if (text.empty()) {
-      mvwprintw(window_, row, 0, " ");
-    } else {
-      for (const auto& match_index : match_indices) {
-        int64_t start_idx = match_index + prefix.length() - shift_;
-        int64_t end_idx = start_idx + match_size;
+    bool off_left = false;
+    bool off_right = false;
+    int64_t visible_width = static_cast<int64_t>(getContentWidth());
+    for (const auto& match_index : match_indices) {
+      int64_t scr_start = static_cast<int64_t>(match_index + prefix.length())
+                          - static_cast<int64_t>(shift_);
+      int64_t scr_end   = scr_start + static_cast<int64_t>(match_size);
 
-        start_idx = std::min(
-          static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), start_idx));
-        end_idx = std::min(
-          static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), end_idx));
-
-        int64_t substr_len = std::max(static_cast<int64_t>(1), end_idx - start_idx);
-
-        printStyledAt(window_, row, static_cast<int>(start_idx),
-          (selected ? A_REVERSE : 0) | COLOR_PAIR(CP_DEFAULT_CYAN),
-          "%s", text.substr(start_idx, substr_len).c_str());
+      if (scr_start >= visible_width) {
+        off_right = true;
+        continue;
       }
+      if (scr_end <= 0) {
+        off_left = true;
+        continue;
+      }
+
+      int64_t clip_start = std::max(static_cast<int64_t>(0), scr_start);
+      int64_t clip_end   = std::min({scr_end, visible_width,
+                                     static_cast<int64_t>(text.size())});
+
+      if (clip_end <= clip_start) {
+        continue;
+      }
+
+      printStyledAt(window_, row, static_cast<int>(clip_start),
+        (selected ? A_REVERSE : 0) | COLOR_PAIR(CP_DEFAULT_CYAN),
+        "%.*s", static_cast<int>(clip_end - clip_start),
+        text.c_str() + clip_start);
+    }
+
+    if (off_right) {
+      int col = (right_edge_ > 0) ? right_edge_ - 1
+                                   : width_ - 1 - (scrollbar() ? 1 : 0);
+      printStyledAt(window_, row, col, COLOR_PAIR(CP_WHITE_CYAN), ">");
+    }
+    if (off_left) {
+      printStyledAt(window_, row, 0, COLOR_PAIR(CP_WHITE_CYAN), "<");
     }
   }
 }

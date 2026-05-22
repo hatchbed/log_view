@@ -41,7 +41,8 @@ enum Color {
   CP_DEFAULT, CP_RED, CP_YELLOW, CP_GREY, CP_DEFAULT_CYAN, CP_DEFAULT_GREY,
   CP_ANSI_BLACK, CP_ANSI_RED, CP_ANSI_GREEN, CP_ANSI_YELLOW,
   CP_ANSI_BLUE, CP_ANSI_MAGENTA, CP_ANSI_CYAN, CP_ANSI_WHITE,
-  CP_BRIGHT_BLUE  // color 12 on 16+ color terminals; falls back to COLOR_BLUE on 8-color
+  CP_BRIGHT_BLUE,  // color 12 on 16+ color terminals; falls back to COLOR_BLUE on 8-color
+  CP_WHITE_CYAN    // white foreground on cyan background
 };
 
 struct AnsiSegment {
