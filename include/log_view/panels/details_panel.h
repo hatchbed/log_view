@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <memory>
 
 #include <log_view/log_filter.h>
@@ -41,13 +42,20 @@ class DetailsPanel : public PanelInterface {
   : PanelInterface(height, width, y, x), filter_(filter) {}
   virtual ~DetailsPanel() {}
   virtual void refresh();
+  virtual bool handleNavigation(int key);
 
   protected:
-  virtual size_t getContentSize() const { return 6; }
-  virtual int getContentHeight() const { return height_ - 2; }
+  virtual bool canNavigate() const { return !hidden(); }
+  virtual size_t getContentSize() const { return content_size_; }
+  virtual int getContentHeight() const { return std::max(1, height_ - 2); }
   virtual int getContentWidth() const;
+  virtual void setCursor(int64_t cursor) { cursor_ = cursor; }
+  virtual int64_t getCursor() const { return cursor_; }
 
   const LogFilter& filter_;
+  mutable size_t content_size_ = 6;
+  int64_t cursor_ = -1;
+  int64_t last_selected_ = -2;
 };
 typedef std::shared_ptr<DetailsPanel> DetailsPanelPtr;
 

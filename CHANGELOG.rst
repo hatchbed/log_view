@@ -4,6 +4,7 @@ Changelog for package log_view
 
 Forthcoming
 -----------
+* Fixed details panel to scroll vertically when insufficient space is available.
 * Fixed help panel to scroll vertically when insufficient space is available.
 
 0.1.4 (2026-05-05)
