@@ -100,6 +100,13 @@ void LogFilter::setEnableNodeFilter(bool enable) {
   }
 }
 
+void LogFilter::setShowSessionBoundaries(bool enable) {
+  if (show_session_boundaries_ != enable) {
+    show_session_boundaries_ = enable;
+    reset();
+  }
+}
+
 void LogFilter::toggleNode(const std::string& node) {
   auto element = nodes_.find(node);
   if (element != nodes_.end()) {
@@ -170,12 +177,19 @@ void LogFilter::update() {
 
   // TODO(malban): process for 50 ms to avoid hogging the screen if there is a backlog
 
+  bool marker_added = false;
   for (; latest_log_index_ < logs.size(); latest_log_index_++) {
     if (accepted(logs[latest_log_index_], true)) {
+      if (logs[latest_log_index_].node == kMarkerNode) {
+        marker_added = true;
+      }
       for (size_t i = 0; i < logs[latest_log_index_].text.size(); i++) {
         log_indices_.push_back({latest_log_index_, i});
       }
     }
+  }
+  if (marker_added) {
+    cleanSessionBoundaries();
   }
 }
 
@@ -184,8 +198,12 @@ void LogFilter::idleProcess() {
 
   // TODO(malban): process for 50 ms instead of fixed 1000
 
+  bool marker_added = false;
   for (size_t i = 0; earliest_log_index_ != 0 && i < 1000; earliest_log_index_--, i++) {
     if (accepted(logs[earliest_log_index_])) {
+      if (logs[earliest_log_index_].node == kMarkerNode) {
+        marker_added = true;
+      }
       size_t lines = logs[earliest_log_index_].text.size();
       for (size_t j = 1; j <= lines; j++) {
         log_indices_.push_front({earliest_log_index_, lines - j});
@@ -205,6 +223,9 @@ void LogFilter::idleProcess() {
         }
       }
     }
+  }
+  if (marker_added) {
+    cleanSessionBoundaries();
   }
 
   if (search_cursor_ == -1 && !search_.empty() && !log_indices_.empty()) {
@@ -335,6 +356,10 @@ void LogFilter::clearSearch() {
 }
 
 bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
+  if (entry.node == kMarkerNode) {
+    return show_session_boundaries_;
+  }
+
   bool include = filter_list_.empty();
 
   auto node = nodes_.find(entry.node);
@@ -400,10 +425,87 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
   return include;
 }
 
+void LogFilter::removeAtIndex(size_t pos) {
+  if (pos >= log_indices_.size()) return;
+  log_indices_.erase(log_indices_.begin() + pos);
+
+  int64_t p = static_cast<int64_t>(pos);
+  auto shift = [p](int64_t& val) {
+    if (val > p) {
+      val--;
+    } else if (val == p) {
+      val = -1;
+    }
+  };
+
+  shift(cursor_);
+  shift(select_start_);
+  shift(select_end_);
+  if (select_start_ < 0 || select_end_ < 0) {
+    select_start_ = -1;
+    select_end_   = -1;
+  }
+  shift(search_cursor_);
+  shift(search_cursor_fwd_);
+  shift(search_cursor_rev_);
+}
+
+void LogFilter::cleanSessionBoundaries() {
+  if (!show_session_boundaries_) return;
+  const auto& logs = logs_->logs();
+
+  size_t i = 0;
+  while (i < log_indices_.size()) {
+    const LogLine& ll = log_indices_[i];
+    if (ll.index >= logs.size() || ll.line != 0) { i++; continue; }
+    const LogEntry& entry = logs[ll.index];
+    if (entry.node != kMarkerNode || entry.text.empty()) { i++; continue; }
+    if (entry.text[0].find("Session Started") == std::string::npos) { i++; continue; }
+
+    // Found a "Session Started" at i. Scan forward to characterise the session.
+    size_t end_pos = log_indices_.size();  // sentinel: no end marker found
+    bool has_logs          = false;
+    bool followed_by_start = false;
+
+    for (size_t j = i + 1; j < log_indices_.size(); j++) {
+      const LogLine& jll = log_indices_[j];
+      if (jll.index >= logs.size()) continue;
+      const LogEntry& je = logs[jll.index];
+      if (je.node == kMarkerNode) {
+        if (jll.line != 0) continue;
+        bool is_end = !je.text.empty() &&
+                      je.text[0].find("Recording Ended") != std::string::npos;
+        if (is_end) {
+          end_pos = j;
+        } else {
+          followed_by_start = true;
+        }
+        break;
+      }
+      has_logs = true;
+    }
+
+    if (!has_logs) {
+      bool is_current = (end_pos == log_indices_.size()) && !followed_by_start;
+      if (!is_current) {
+        if (end_pos < log_indices_.size()) {
+          removeAtIndex(end_pos);  // remove end first (higher index)
+        }
+        removeAtIndex(i);
+        continue;  // don't increment: next entry shifted into position i
+      }
+    }
+    i++;
+  }
+}
+
 size_t LogFilter::filteredCount() const {
+  const auto& logs = logs_->logs();
   size_t count = 0;
   for (const auto& ll : log_indices_) {
-    if (ll.line == 0) count++;
+    if (ll.line == 0 && ll.index < logs.size() && logs[ll.index].node != kMarkerNode) {
+      count++;
+    }
   }
   return count;
 }
