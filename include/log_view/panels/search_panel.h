@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include <log_view/log_filter.h>
@@ -46,14 +47,18 @@ class SearchPanel : public PanelInterface {
   virtual void toggle();
   virtual bool handleInput(int val);
 
+  void setOnSearch(std::function<void()> callback) { on_search_ = callback; }
+
   protected:
-  virtual bool canFocus() const { return !show_results_; }
-  virtual bool canInput() const { return true; }
+  virtual bool canFocus() const { return true; }
+  virtual bool canInput() const { return !show_results_ || edit_mode_; }
   virtual int inputOffset() const { return 8; }
 
   LogFilter& filter_;
 
   bool show_results_ = false;
+  bool edit_mode_ = false;
+  std::function<void()> on_search_;
 };
 using SearchPanelPtr = std::shared_ptr<SearchPanel>;
 

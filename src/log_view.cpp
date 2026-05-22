@@ -85,6 +85,7 @@ void LogView::init() {
   init_pair(CP_ANSI_CYAN,    COLOR_CYAN,    -1);
   init_pair(CP_ANSI_WHITE,   COLOR_WHITE,   -1);
   init_pair(CP_BRIGHT_BLUE,  (COLORS >= 16) ? 12 : COLOR_BLUE, -1);
+  init_pair(CP_WHITE_CYAN,   COLOR_WHITE, COLOR_CYAN);
   kAttrGrey     = (COLORS >= 16) ? COLOR_PAIR(CP_GREY)         : static_cast<attr_t>(A_DIM);
   kAttrGreyBg   = (COLORS >= 16) ? COLOR_PAIR(CP_DEFAULT_GREY) : static_cast<attr_t>(A_REVERSE);
   kAttrBoldBlue = A_BOLD | COLOR_PAIR(CP_ANSI_BLUE);
@@ -115,6 +116,9 @@ void LogView::init() {
 
   search_panel_ = std::make_shared<SearchPanel>(1, COLS, LINES - 1, 0, log_filter_);
   search_panel_->hide(true);
+  search_panel_->setOnSearch([this]() {
+    log_panel_->forceRefresh();
+  });
   panels_.push_back(search_panel_);
 
   filter_panel_ = std::make_shared<FilterPanel>(1, COLS, LINES - 1, 0, log_filter_);
@@ -139,7 +143,7 @@ void LogView::init() {
   details_panel_->hide(true);
   panels_.push_back(details_panel_);
 
-  help_panel_ = std::make_shared<HelpPanel>(24, COLS - 8, 2, 4);
+  help_panel_ = std::make_shared<HelpPanel>(21, COLS - 8, 2, 4);
   help_panel_->hide(true);
   panels_.push_back(help_panel_);
   level_panel_->setHelpOpenCallback([this]() {
@@ -353,12 +357,6 @@ void LogView::update() {
     } else if (ch == ctrl('x')) {
       search_panel_->clearSearch();
       refreshLayout();
-    } else if (ch == KEY_BACKSPACE) {
-      log_filter_.prevMatch();
-      log_panel_->forceRefresh();
-    } else if (ch == KEY_ENTER_VAL) {
-      log_filter_.nextMatch();
-      log_panel_->forceRefresh();
     } else if (ch == ctrl('e')) {
       exclude_panel_->hide(exclude_panel_->visible());
       if (exclude_panel_->focus()) {
@@ -387,6 +385,7 @@ void LogView::update() {
       } else {
         focusNext(node_panel_);
       }
+      refreshLayout();
     } else if (ch == ctrl('d')) {
       node_panel_->hide(true);
       details_panel_->hide(details_panel_->visible());
@@ -395,6 +394,7 @@ void LogView::update() {
       } else {
         focusNext(details_panel_);
       }
+      refreshLayout();
     } else if (ch == KEY_F(1)) {
       level_panel_->toggleDebug();
     } else if (ch == KEY_F(2)) {
@@ -452,6 +452,9 @@ void LogView::update() {
 
 void LogView::refreshLayout() {
   status_panel_->resize(1, COLS, 0, 0);
+  int side_start = COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar();
+  bool side_visible = node_panel_->visible() || details_panel_->visible();
+  log_panel_->setRightEdge(side_visible ? side_start : 0);
   log_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
     COLS, 1, 0);
@@ -465,11 +468,11 @@ void LogView::refreshLayout() {
   exclude_panel_->resize(1, COLS, LINES - 1, 0);
   node_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
-    COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
+    COLS / 2, 1, side_start);
   details_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
-    COLS / 2, 1, COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar());
-  int help_height = std::min(24, std::max(5, LINES - 4));
+    COLS / 2, 1, side_start);
+  int help_height = std::min(21, std::max(5, LINES - 4));
   help_panel_->resize(help_height, COLS - 8, 2, 4);
   int pw = prefsPanelWidth();
   int prefs_height = std::min(25, std::max(6, LINES - 4));
