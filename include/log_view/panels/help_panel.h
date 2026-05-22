@@ -45,13 +45,13 @@ class HelpPanel : public PanelInterface {
   public:
   HelpPanel(int height, int width, int y, int x);
   virtual ~HelpPanel() {}
-  virtual void refresh();
-  virtual void resize(int height, int width, int y, int x);
-  virtual bool handleMouse(const MEVENT& event) { return !hidden(); }
-  virtual bool handleKey(int key);
+  void refresh() override;
+  void resize(int height, int width, int y, int x) override;
+  bool handleMouse(const MEVENT& event) override { return !hidden(); }
+  bool handleKey(int key) override;
 
   protected:
-  virtual bool canNavigate() const { return !hidden(); }
+  bool canNavigate() const override { return !hidden(); }
   size_t getContentSize() const override;
   int getContentHeight() const override;
   void setCursor(int64_t cursor) override { cursor_ = cursor; }
