@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.4.0 (2026-05-22)
+------------------
 * Added subscription to /clock to display sim time on status bar.
 * Updated stamp format selection to preview the stamp format change.
 * Improved formatting of nodes, preferences, and details panels.
