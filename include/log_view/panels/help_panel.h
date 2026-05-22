@@ -52,12 +52,17 @@ class HelpPanel : public PanelInterface {
 
   protected:
   virtual bool canNavigate() const { return !hidden(); }
+  virtual size_t getContentSize() const override;
+  virtual int getContentHeight() const override;
+  virtual void setCursor(int64_t cursor) override { cursor_ = cursor; }
+  virtual int64_t getCursor() const override { return cursor_; }
 
-  void printKeybinding(const HelpText& text);
+  void printKeybinding(const HelpText& text, int scroll_top);
 
   std::vector<HelpText> keys_;
   size_t longest_key_ = 0;
   size_t longest_line_ = 0;
+  int64_t cursor_ = -1;
 };
 typedef std::shared_ptr<HelpPanel> HelpPanelPtr;
 
