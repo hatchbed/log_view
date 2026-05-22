@@ -47,6 +47,7 @@ public:
   bool handleMouse(const MEVENT& event) override { return !hidden(); }
 
   void setOnSave(std::function<void()> cb) { on_save_ = cb; }
+  void setOnPreview(std::function<void()> cb) { on_preview_ = cb; }
 
 protected:
   bool canFocus() const override { return false; }
@@ -67,9 +68,11 @@ private:
 
   Preferences& prefs_;
   Preferences pending_;
+  Preferences original_;
   int selected_ = 0;
   int scroll_top_ = 0;
   std::function<void()> on_save_;
+  std::function<void()> on_preview_;
 
   static constexpr int kNumFields       = 5;
   static constexpr int kFieldTimestamp  = 0;

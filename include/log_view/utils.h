@@ -35,7 +35,11 @@
 
 namespace log_view {
 
-enum Color { CP_DEFAULT, CP_RED, CP_YELLOW, CP_GREY, CP_DEFAULT_CYAN, CP_DEFAULT_GREY };
+enum Color {
+  CP_DEFAULT, CP_RED, CP_YELLOW, CP_GREY, CP_DEFAULT_CYAN, CP_DEFAULT_GREY,
+  CP_ANSI_BLUE,
+  CP_BRIGHT_BLUE   // color 12 on 16+ color terminals; falls back to COLOR_BLUE on 8-color
+};
 
 std::string toString(double val, int precision);
 
