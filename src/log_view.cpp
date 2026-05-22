@@ -149,7 +149,7 @@ void LogView::init() {
   {
     int pw = prefsPanelWidth();
     prefs_panel_ = std::make_shared<PrefsPanel>(
-      23, pw, std::max(0, LINES / 2 - 11), std::max(0, COLS / 2 - pw / 2), prefs_);
+      25, pw, std::max(0, LINES / 2 - 12), std::max(0, COLS / 2 - pw / 2), prefs_);
   }
   prefs_panel_->hide(true);
   prefs_panel_->setOnSave([this]() {
@@ -170,12 +170,15 @@ void LogView::init() {
       logs_->setWriter(log_writer_.get());
       log_writer_->start();
     }
+    log_filter_.setShowSessionBoundaries(prefs_.show_session_boundaries);
     log_panel_->forceRefresh();
   });
   prefs_panel_->setOnPreview([this]() {
     log_panel_->forceRefresh();
   });
   panels_.push_back(prefs_panel_);
+
+  log_filter_.setShowSessionBoundaries(prefs_.show_session_boundaries);
 
   if (prefs_.persist_filters) {
     log_filter_.setDebugLevel(prefs_.filters.debug);

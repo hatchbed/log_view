@@ -28,6 +28,8 @@
 
 #include <log_view/log_store.h>
 
+#include <log_view/datatypes.h>
+
 namespace log_view {
 
 const std::deque<LogEntry>& LogStore::logs() {
@@ -42,6 +44,12 @@ const std::deque<LogEntry>& LogStore::logs() {
 size_t LogStore::size() const {
   std::lock_guard<std::mutex> lock(mutex_);
   return logs_.size();
+}
+
+size_t LogStore::logCount() const {
+  std::lock_guard<std::mutex> lock(mutex_);
+  size_t count = logs_.size();
+  return count > marker_count_ ? count - marker_count_ : 0;
 }
 
 int64_t LogStore::firstStampNs() const {
@@ -66,12 +74,16 @@ void LogStore::addEntry(const rosgraph_msgs::LogConstPtr& msg) {
 void LogStore::addEntry(const LogEntry& entry) {
   std::lock_guard<std::mutex> lock(mutex_);
   new_logs_.push_back(entry);
+  if (entry.node == kMarkerNode) {
+    marker_count_++;
+  }
 }
 
 void LogStore::clear() {
   std::lock_guard<std::mutex> lock(mutex_);
   logs_.clear();
   new_logs_.clear();
+  marker_count_ = 0;
   if (writer_) {
     writer_->requestClear();
   }

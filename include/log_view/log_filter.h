@@ -71,6 +71,9 @@ public:
   bool getEnableNodeFilter() const { return filter_nodes_; }
   bool getNodeFilterActive() const { return filter_nodes_ && selected_node_count_ > 0; }
 
+  void setShowSessionBoundaries(bool enable);
+  bool getShowSessionBoundaries() const { return show_session_boundaries_; }
+
   void clearLogs();
   void reset();
   void update();
@@ -134,6 +137,7 @@ private:
   bool error_level_ = true;
   bool fatal_level_ = true;
   bool filter_nodes_ = false;
+  bool show_session_boundaries_ = true;
 
   std::string filter_string_;
   std::string exclude_string_;

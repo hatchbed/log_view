@@ -135,6 +135,10 @@ void PrefsPanel::refresh() {
   printValueRow(17, size_enabled && selected_ == kFieldMaxSize, size_enabled,
                 formatSize(pending_.log_max_size));
 
+  // --- Show Session Boundaries ---
+  printSectionHeader(19, "Show Session Boundaries", true);
+  printValueRow(20, selected_ == kFieldSessionBound, true,
+                pending_.show_session_boundaries ? "yes" : "no");
 
   drawScrollBar(getContentSize(), getContentHeight(), 2, width_ - 1);
 
@@ -209,6 +213,8 @@ bool PrefsPanel::handleKey(int key) {
       cycleRotateSize(-1);
     } else if (selected_ == kFieldMaxSize) {
       cycleMaxSize(-1);
+    } else if (selected_ == kFieldSessionBound) {
+      pending_.show_session_boundaries = !pending_.show_session_boundaries;
     }
   } else if (key == KEY_RIGHT || key == ' ') {
     if (selected_ == kFieldTimestamp) {
@@ -224,6 +230,8 @@ bool PrefsPanel::handleKey(int key) {
       cycleRotateSize(1);
     } else if (selected_ == kFieldMaxSize) {
       cycleMaxSize(1);
+    } else if (selected_ == kFieldSessionBound) {
+      pending_.show_session_boundaries = !pending_.show_session_boundaries;
     }
   }
 
@@ -292,8 +300,8 @@ std::string PrefsPanel::formatSize(size_t bytes) {
 }
 
 void PrefsPanel::snapSelectionToViewport(bool prefer_top) {
-  static constexpr int kHRows[] = {2, 5, 9, 13, 16};
-  static constexpr int kVRows[] = {3, 7, 11, 14, 17};
+  static constexpr int kHRows[] = {2, 5, 9, 13, 16, 19};
+  static constexpr int kVRows[] = {3, 7, 11, 14, 17, 20};
 
   int lo = scroll_top_ + 2;
   int hi = scroll_top_ + (height_ - 4);
@@ -317,8 +325,8 @@ void PrefsPanel::snapSelectionToViewport(bool prefer_top) {
 }
 
 void PrefsPanel::ensureSelectedVisible() {
-  static constexpr int kHeaderRows[] = {2, 5, 9, 13, 16};
-  static constexpr int kValueRows[]  = {3, 7, 11, 14, 17};
+  static constexpr int kHeaderRows[] = {2, 5, 9, 13, 16, 19};
+  static constexpr int kValueRows[]  = {3, 7, 11, 14, 17, 20};
 
   int view_height = getContentHeight();
   int header_row  = kHeaderRows[selected_];

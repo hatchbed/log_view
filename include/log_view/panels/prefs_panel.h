@@ -53,7 +53,7 @@ protected:
   bool canFocus() const override { return false; }
   bool canNavigate() const override { return !hidden(); }
   void activate(bool enable) override;
-  size_t getContentSize() const override { return 16; }
+  size_t getContentSize() const override { return 19; }
   int getContentHeight() const override { return std::max(1, height_ - 5); }
   int64_t getCursor() const override { return scroll_top_ + getContentHeight(); }
 
@@ -78,12 +78,13 @@ private:
   std::function<void()> on_save_;
   std::function<void()> on_preview_;
 
-  static constexpr int kNumFields       = 5;
-  static constexpr int kFieldTimestamp  = 0;
-  static constexpr int kFieldPersist    = 1;
-  static constexpr int kFieldPersistLogs = 2;
-  static constexpr int kFieldRotateSize = 3;
-  static constexpr int kFieldMaxSize    = 4;
+  static constexpr int kNumFields         = 6;
+  static constexpr int kFieldTimestamp    = 0;
+  static constexpr int kFieldPersist      = 1;
+  static constexpr int kFieldPersistLogs  = 2;
+  static constexpr int kFieldRotateSize   = 3;
+  static constexpr int kFieldMaxSize      = 4;
+  static constexpr int kFieldSessionBound = 5;
 
   static constexpr size_t kRotateSizePresets[] = {
     1ul * 1024 * 1024,
