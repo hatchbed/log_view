@@ -93,9 +93,6 @@ CTRL-k       Show/hide preferences
 CTRL-n       Show/hide node selection
 CTRL-r       Clear message history
 CTRL-s       Search for matching string
-CTRL-x       Clear search
-Backspace    Prev search match
-Enter        Next search match
 ```
 
 ##### Preferences
@@ -120,4 +117,3 @@ a bug in the currently distributed version of ncurses, mousewheel scrolling only
 ### Possible Improvements
  - Regular expression support
  - Support loading logs directly from bag files
- - Refine UI design and keybindings to be more consistent/intuitive
