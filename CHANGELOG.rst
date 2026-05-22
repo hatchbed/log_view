@@ -8,6 +8,7 @@ Forthcoming
 * Fixed help panel to scroll vertically when insufficient space is available.
 * Fixed preference panel to scroll vertically when insufficient space is available.
 * Updated node panel scrolling to make it consistent with other panels.
+* Improved selection controls.
 
 0.1.4 (2026-05-05)
 ------------------

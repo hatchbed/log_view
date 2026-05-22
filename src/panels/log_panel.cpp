@@ -99,13 +99,110 @@ bool LogPanel::handleKey(int key) {
     return false;
   }
 
-  if (key == ctrl('a')) {
-      selectAll();
+  if (key == 27 && filter_.getSelectStart() >= 0) {
+    filter_.clearSelect();
+    forceRefresh();
+    return true;
+  }
 
-      return true;
+  if (key == ctrl('a')) {
+    selectAll();
+    return true;
+  }
+
+  if (key == KEY_SR || key == KEY_SF || key == KEY_SPREVIOUS ||
+      key == KEY_SNEXT || key == KEY_SHOME || key == KEY_SEND) {
+    extendSelect(key);
+    return true;
   }
 
   return false;
+}
+
+void LogPanel::extendSelect(int key) {
+  if (getContentSize() == 0) {
+    return;
+  }
+
+  int64_t max_idx = static_cast<int64_t>(getContentSize()) - 1;
+
+  int64_t cursor = filter_.getCursor();
+  if (cursor < 0 || cursor > static_cast<int64_t>(getContentSize())) {
+    cursor = static_cast<int64_t>(getContentSize());
+  }
+  int64_t view_height = static_cast<int64_t>(getContentHeight());
+  int64_t view_top = std::max(static_cast<int64_t>(0), cursor - view_height);
+  int64_t view_bottom = std::min(cursor - 1, max_idx);
+
+  if (filter_.getSelectStart() < 0) {
+    filter_.setSelectStart(view_bottom);
+    filter_.setSelectEnd(view_bottom);
+  }
+
+  int64_t end = filter_.getSelectEnd();
+  bool visible = (end >= view_top && end <= view_bottom);
+
+  if (!visible) {
+    follow(false);
+    if (end < view_top) {
+      filter_.setCursor(
+        std::min(end + view_height, static_cast<int64_t>(getContentSize())));
+    } else {
+      moveTo(static_cast<size_t>(end) + 1);
+    }
+    forceRefresh();
+    return;
+  }
+
+  if (key == KEY_SR) {
+    end = std::max(static_cast<int64_t>(0), end - 1);
+  } else if (key == KEY_SF) {
+    end = std::min(max_idx, end + 1);
+  } else if (key == KEY_SPREVIOUS) {
+    if (end == view_top) {
+      pageUp();
+      cursor = filter_.getCursor();
+      if (cursor < 0 || cursor > static_cast<int64_t>(getContentSize())) {
+        cursor = static_cast<int64_t>(getContentSize());
+      }
+      view_top = std::max(static_cast<int64_t>(0), cursor - view_height);
+    }
+    end = view_top;
+  } else if (key == KEY_SNEXT) {
+    if (end == view_bottom) {
+      pageDown();
+      cursor = filter_.getCursor();
+      if (cursor < 0 || cursor > static_cast<int64_t>(getContentSize())) {
+        cursor = static_cast<int64_t>(getContentSize());
+      }
+      view_bottom = std::min(cursor - 1, max_idx);
+    }
+    end = view_bottom;
+  } else if (key == KEY_SHOME) {
+    end = 0;
+  } else if (key == KEY_SEND) {
+    end = max_idx;
+  }
+
+  filter_.setSelectEnd(end);
+
+  cursor = filter_.getCursor();
+  if (cursor < 0 || cursor > static_cast<int64_t>(getContentSize())) {
+    cursor = static_cast<int64_t>(getContentSize());
+  }
+  int64_t new_view_top = std::max(static_cast<int64_t>(0), cursor - view_height);
+  int64_t new_view_bottom = std::min(cursor - 1, max_idx);
+
+  if (end < new_view_top) {
+    follow(false);
+    filter_.setCursor(
+      std::min(end + view_height, static_cast<int64_t>(getContentSize())));
+  } else if (end > new_view_bottom) {
+    moveTo(static_cast<size_t>(end) + 1);
+  }
+
+  copyToClipboard();
+  forceRefresh();
 }
 
 
@@ -116,7 +213,11 @@ bool LogPanel::handleMouse(const MEVENT& event) {
 
   if (event.bstate & BUTTON1_PRESSED) {
     mouse_down_ = true;
-    startSelect(event.y - y_);
+    if ((event.bstate & BUTTON_CTRL) && filter_.getSelectStart() >= 0) {
+      endSelect(event.y - y_);
+    } else {
+      startSelect(event.y - y_);
+    }
     forceRefresh();
     return true;
   } else if (mouse_down_ && (event.bstate & REPORT_MOUSE_POSITION)) {

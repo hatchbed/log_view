@@ -51,6 +51,7 @@ class LogPanel : public PanelInterface {
   virtual void endSelect(int row);
   virtual bool handleMouse(const MEVENT& event);
   virtual bool handleKey(int key);
+  virtual void extendSelect(int key);
   virtual void resize(int height, int width, int y, int x);
 
   protected:
