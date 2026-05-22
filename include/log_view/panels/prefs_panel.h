@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
@@ -51,6 +52,9 @@ protected:
   virtual bool canFocus() const { return false; }
   bool canNavigate() const override { return !hidden(); }
   void activate(bool enable) override;
+  size_t getContentSize() const override { return 16; }
+  int getContentHeight() const override { return std::max(1, height_ - 5); }
+  int64_t getCursor() const override { return scroll_top_ + getContentHeight(); }
 
 private:
   void cycleTimestampFormat(int direction);
@@ -58,10 +62,13 @@ private:
   void cycleMaxSize(int direction);
   bool isFieldEnabled(int field) const;
   static std::string formatSize(size_t bytes);
+  void snapSelectionToViewport(bool prefer_top);
+  void ensureSelectedVisible();
 
   Preferences& prefs_;
   Preferences pending_;
   int selected_ = 0;
+  int scroll_top_ = 0;
   std::function<void()> on_save_;
 
   static constexpr int kNumFields       = 5;
