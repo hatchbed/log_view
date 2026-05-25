@@ -2,6 +2,11 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* Fix navigation in node selection panel when the panel has no scroll bar.
+* Fix restoring selected whitelist nodes after clearing logs.
+
 0.4.0 (2026-05-22)
 ------------------
 * Added subscription to /clock to display sim time on status bar.

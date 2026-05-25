@@ -145,15 +145,26 @@ void LogFilter::invertNodes() {
   reset();
 }
 
-void LogFilter::setPendingNodeSelected(const std::set<std::string>& whitelist) {
-  pending_node_selected_ = whitelist;
+void LogFilter::setNodeWhitelist(const std::set<std::string>& whitelist) {
+  for (const auto& name : whitelist) {
+    if (!nodes_.count(name)) {
+      nodes_[name] = {true, 0};
+      selected_node_count_++;
+    }
+  }
 }
 
 
 void LogFilter::clearLogs() {
+  for (auto it = nodes_.begin(); it != nodes_.end(); ) {
+    if (it->second.selected) {
+      it->second.count = 0;
+      ++it;
+    } else {
+      it = nodes_.erase(it);
+    }
+  }
   logs_->clear();
-  nodes_.clear();
-  selected_node_count_ = 0;
   clearSearch();
   log_indices_.clear();
   cursor_ = -1;
@@ -440,12 +451,7 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
 
   auto node = nodes_.find(entry.node);
   if (node == nodes_.end()) {
-    bool selected = pending_node_selected_.count(entry.node) > 0;
-    nodes_[entry.node].selected = selected;
-    nodes_[entry.node].count = 1;
-    if (selected) {
-      selected_node_count_++;
-    }
+    nodes_[entry.node] = {false, 1};
   } else if (new_entry) {
     node->second.count++;
   }

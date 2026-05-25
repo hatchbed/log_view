@@ -241,8 +241,6 @@ bool NodePanel::handleNavigation(int key) {
   int view_height  = getContentHeight();
   int content_size = static_cast<int>(getContentSize());
 
-  if (content_size <= view_height) { return false; }
-
   int64_t selection = 0;
   int64_t idx = 0;
   for (const auto& node : filter_.nodes()) {
