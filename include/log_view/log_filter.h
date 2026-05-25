@@ -62,7 +62,7 @@ public:
   void toggleNode(const std::string& node);
   void selectAllNodes();
   void invertNodes();
-  void setPendingNodeSelected(const std::set<std::string>& whitelist);
+  void setNodeWhitelist(const std::set<std::string>& whitelist);
 
   bool getDebugLevel() const { return debug_level_; }
   bool getInfoLevel() const { return info_level_; }
@@ -142,7 +142,6 @@ private:
   std::string exclude_string_;
 
   size_t selected_node_count_ = 0;
-  std::set<std::string> pending_node_selected_;
 
   std::vector<std::string> filter_list_;
   std::vector<std::string> exclude_list_;

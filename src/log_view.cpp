@@ -191,7 +191,7 @@ void LogView::init() {
     log_filter_.setErrorLevel(prefs_.filters.error);
     log_filter_.setFatalLevel(prefs_.filters.fatal);
     log_filter_.setEnableNodeFilter(prefs_.filters.node_filter_enabled);
-    log_filter_.setPendingNodeSelected(prefs_.filters.node_whitelist);
+    log_filter_.setNodeWhitelist(prefs_.filters.node_whitelist);
     if (!prefs_.filters.filter_pattern.empty()) {
       filter_panel_->setInputText(prefs_.filters.filter_pattern);
       filter_panel_->hide(false);
