@@ -66,11 +66,17 @@ struct LogEntry
   std::string file;
   std::string function;
   uint32_t line;
+  int bag_source_idx = -1;  // index into bag paths list; -1 = live / not from a bag
   std::vector<std::string> text;
 };
 
 struct NodeData {
   bool selected = false;  // true = in whitelist (show when node filter is active)
+  size_t count = 0;
+};
+
+struct BagSourceData {
+  bool selected = true;  // all bags visible by default
   size_t count = 0;
 };
 

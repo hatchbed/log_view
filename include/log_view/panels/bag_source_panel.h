@@ -1,4 +1,4 @@
-// Copyright 2020 Hatchbed L.L.C.
+// Copyright 2026 Hatchbed L.L.C.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -28,51 +28,41 @@
 
 #pragma once
 
-#include <functional>
 #include <memory>
-#include <utility>
 
 #include <log_view/log_filter.h>
 #include <log_view/panel_interface.h>
 
 namespace log_view {
 
-class LevelPanel : public PanelInterface {
+class BagSourcePanel : public PanelInterface {
   public:
-  LevelPanel(int height, int width, int y, int x, LogFilter& filter)
+  BagSourcePanel(int height, int width, int y, int x, LogFilter& filter)
   : PanelInterface(height, width, y, x), filter_(filter) {}
-  virtual ~LevelPanel() {}
+  virtual ~BagSourcePanel() {}
   virtual void refresh();
-
-  virtual void toggleDebug();
-  virtual void toggleInfo();
-  virtual void toggleWarn() ;
-  virtual void toggleError();
-  virtual void toggleFatal();
-  virtual void toggleAllNodes();
+  virtual bool handleNavigation(int key);
   virtual bool handleMouse(const MEVENT& event);
-
-  void setShowInvertHintCallback(std::function<bool()> cb) {
-    show_invert_hint_ = std::move(cb);
-  }
-
-  void setHelpOpenCallback(std::function<bool()> cb) {
-    help_open_ = std::move(cb);
-  }
-
-  void setBagMode(bool bag_mode) { bag_mode_ = bag_mode; }
-
-  void setBagPanelOpenCallback(std::function<bool()> cb) {
-    bag_panel_open_ = std::move(cb);
-  }
+  virtual bool handleKey(int key);
 
   protected:
+  virtual bool canFocus() const { return true; }
+  virtual bool canNavigate() const { return true; }
+  virtual bool canSelect() const { return true; }
+  virtual size_t getContentSize() const { return filter_.bagSources().size(); }
+  virtual int getContentHeight() const { return height_ - 2; }
+  virtual int getContentWidth() const;
+  virtual void follow(bool enable);
+  virtual void moveTo(size_t index);
+  virtual void setCursor(int64_t cursor) { cursor_ = cursor; }
+  virtual int64_t getCursor() const { return cursor_; }
+  virtual void select();
+
+  size_t cursor_ = 0;
+  int selected_idx_ = 0;
+
   LogFilter& filter_;
-  std::function<bool()> show_invert_hint_;
-  std::function<bool()> help_open_;
-  std::function<bool()> bag_panel_open_;
-  bool bag_mode_ = false;
 };
-using LevelPanelPtr = std::shared_ptr<LevelPanel>;
+using BagSourcePanelPtr = std::shared_ptr<BagSourcePanel>;
 
 }  // namespace log_view

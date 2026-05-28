@@ -1,4 +1,4 @@
-// Copyright 2020 Hatchbed L.L.C.
+// Copyright 2026 Hatchbed L.L.C.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -26,13 +26,13 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-#include <log_view/panels/node_panel.h>
+#include <log_view/panels/bag_source_panel.h>
 
 #include <log_view/utils.h>
 
 namespace log_view {
 
-void NodePanel::refresh() {
+void BagSourcePanel::refresh() {
   int64_t cursor = getCursor();
 
   max_length_ = 0;
@@ -42,7 +42,7 @@ void NodePanel::refresh() {
   cleared_ = false;
 
   box(window_, 0, 0);
-  printStyledAt(window_, 0, width_ / 2 - 3, focus() ? A_BOLD : 0, " nodes ");
+  printStyledAt(window_, 0, width_ / 2 - 3, focus() ? A_BOLD : 0, " bags ");
 
   size_t start_idx = cursor;
   if (start_idx >= getContentHeight()) {
@@ -51,21 +51,17 @@ void NodePanel::refresh() {
     start_idx = 0;
   }
 
-  std::vector<std::pair<std::string, NodeData>> nodes;
-  for (const auto& node : filter_.nodes()) {
-    nodes.push_back(node);
-  }
+  const auto& paths = filter_.bagPaths();
+  const auto& sources = filter_.bagSources();
 
   bool selection_visible = false;
   for (size_t i = 0; i < getContentHeight() && i + start_idx < getContentSize(); i++) {
-    auto name = nodes[i + start_idx].first;
-    if (name == selected_) {
+    if (static_cast<int>(i + start_idx) == selected_idx_) {
       selection_visible = true;
       break;
     }
   }
 
-  // force in focus element to be visible
   if (!selection_visible) {
     moveTo(cursor);
     cursor = getCursor();
@@ -78,12 +74,13 @@ void NodePanel::refresh() {
   }
 
   for (size_t i = 0; i < getContentHeight() && i + start_idx < getContentSize(); i++) {
-    const auto& node_data = nodes[i + start_idx].second;
-    auto name = nodes[i + start_idx].first;
-    bool hover = focus_ && (name == selected_);
-    bool selected = node_data.selected;
+    int idx = static_cast<int>(i + start_idx);
+    const auto& src_data = sources[idx];
+    const auto& name = paths[idx];
+    bool hover = focus_ && (idx == selected_idx_);
+    bool selected = src_data.selected;
 
-    std::string text = name + ": " + std::to_string(node_data.count);
+    std::string text = name + ": " + std::to_string(src_data.count);
 
     attr_t attr = (selected ? A_REVERSE : 0) | (hover ? A_BOLD : 0);
 
@@ -122,7 +119,7 @@ void NodePanel::refresh() {
       int chgat_n      = std::min(vis_name, vis_text);
       if (chgat_n > 0) {
         attr_t name_attr = (selected ? A_REVERSE : 0) | (hover ? A_BOLD : 0);
-        if (COLORS < 16) { name_attr |= A_BOLD; }  // bold required for brightness on 8-color
+        if (COLORS < 16) { name_attr |= A_BOLD; }
         mvwchgat(window_, static_cast<int>(i) + 1, vis_col, chgat_n, name_attr, CP_BRIGHT_BLUE,
                  nullptr);
       }
@@ -134,26 +131,23 @@ void NodePanel::refresh() {
   drawScrollBar(getContentSize(), getContentHeight(), 1, width_ - 1);
 }
 
-bool NodePanel::handleKey(int key) {
+bool BagSourcePanel::handleKey(int key) {
   if (hidden()) {
     return false;
   }
 
   if (key == ctrl('a')) {
-      filter_.selectAllNodes();
-
-      return true;
+    filter_.selectAllBagSources();
+    return true;
   } else if (key == 'i' && focus()) {
-      filter_.invertNodes();
-
-      return true;
+    filter_.invertBagSources();
+    return true;
   }
 
   return false;
 }
 
-
-bool NodePanel::handleMouse(const MEVENT& event) {
+bool BagSourcePanel::handleMouse(const MEVENT& event) {
   if (hidden() || !encloses(event.y, event.x)) {
     return false;
   }
@@ -168,33 +162,27 @@ bool NodePanel::handleMouse(const MEVENT& event) {
       start_idx = 0;
     }
 
-    size_t index = start_idx + row;
-    if (index >= filter_.nodes().size()) {
+    int index = static_cast<int>(start_idx) + row;
+    if (index < 0 || index >= static_cast<int>(filter_.bagSources().size())) {
       return true;
     }
 
-    std::vector<std::pair<std::string, NodeData>> nodes;
-    for (const auto& node : filter_.nodes()) {
-      nodes.push_back(node);
-    }
-
-    selected_ = nodes[index].first;
-    filter_.toggleNode(selected_);
+    selected_idx_ = index;
+    filter_.toggleBagSource(selected_idx_);
     refresh();
   }
   return true;
 }
 
-
-void NodePanel::follow(bool enable) {
+void BagSourcePanel::follow(bool enable) {
   if (getContentSize() == 0) {
     return;
   }
-  selected_ = filter_.nodes().rbegin()->first;
+  selected_idx_ = static_cast<int>(getContentSize()) - 1;
   moveTo(getCursor());
 }
 
-void NodePanel::moveTo(size_t index) {
+void BagSourcePanel::moveTo(size_t index) {
   if (getContentSize() == 0) {
     return;
   }
@@ -207,26 +195,11 @@ void NodePanel::moveTo(size_t index) {
     setCursor(cursor);
   }
 
-  std::vector<std::pair<std::string, NodeData>> nodes;
-  int64_t selection = -1;
-  size_t idx = 0;
-  for (const auto& node : filter_.nodes()) {
-    nodes.push_back(node);
-    if (node.first == selected_) {
-      selection = idx;
-    }
-    idx++;
-  }
-
-  if (selection < 0 || index == 0) {
-    selection = 0;
-  } else {
-    selection += offset;
-    selection = std::max(
-      static_cast<int64_t>(0),
-      std::min(static_cast<int64_t>(getContentSize()) - 1, selection));
-  }
-  selected_ = nodes[selection].first;
+  int64_t selection = selected_idx_ + offset;
+  selection = std::max(
+    static_cast<int64_t>(0),
+    std::min(static_cast<int64_t>(getContentSize()) - 1, selection));
+  selected_idx_ = static_cast<int>(selection);
 
   size_t start_idx = cursor;
   if (start_idx >= getContentHeight()) {
@@ -235,43 +208,33 @@ void NodePanel::moveTo(size_t index) {
     start_idx = 0;
   }
 
-  if (selection < start_idx) {
+  if (selection < static_cast<int64_t>(start_idx)) {
     setCursor(selection + getContentHeight());
-  } else if (selection >= start_idx + getContentHeight()) {
+  } else if (selection >= static_cast<int64_t>(start_idx + getContentHeight())) {
     setCursor(selection + 1);
   }
 }
 
-bool NodePanel::handleNavigation(int key) {
+bool BagSourcePanel::handleNavigation(int key) {
   if (hidden_ || !focus()) { return false; }
 
-  int view_height  = getContentHeight();
   int content_size = static_cast<int>(getContentSize());
-
-  int64_t selection = 0;
-  int64_t idx = 0;
-  for (const auto& node : filter_.nodes()) {
-    if (node.first == selected_) {
-      selection = idx;
-    }
-    idx++;
-  }
 
   bool scroll_up   = (key == KEY_UP   || key == KEY_PPAGE || key == KEY_HOME);
   bool scroll_down = (key == KEY_DOWN || key == KEY_NPAGE || key == KEY_END);
 
-  if (scroll_up   && selection <= 0)                { return false; }
-  if (scroll_down && selection >= content_size - 1) { return false; }
+  if (scroll_up   && selected_idx_ <= 0)                { return false; }
+  if (scroll_down && selected_idx_ >= content_size - 1) { return false; }
 
   return PanelInterface::handleNavigation(key);
 }
 
-int NodePanel::getContentWidth() const {
+int BagSourcePanel::getContentWidth() const {
   return width_ - 2;
 }
 
-void NodePanel::select() {
-  filter_.toggleNode(selected_);
+void BagSourcePanel::select() {
+  filter_.toggleBagSource(selected_idx_);
 }
 
 }  // namespace log_view

@@ -46,7 +46,8 @@ namespace log_view {
 void loadBagFiles(const std::vector<std::string>& paths, LogStorePtr& logs) {
   std::vector<LogEntry> entries;
 
-  for (const auto& path : paths) {
+  for (size_t bag_idx = 0; bag_idx < paths.size(); bag_idx++) {
+    const auto& path = paths[bag_idx];
     try {
       rosbag2_cpp::Reader reader;
       rosbag2_storage::StorageOptions opts;
@@ -75,7 +76,9 @@ void loadBagFiles(const std::vector<std::string>& paths, LogStorePtr& logs) {
         rcl_interfaces::msg::Log log_msg;
         rclcpp::SerializedMessage extracted(*bag_msg->serialized_data);
         serializer.deserialize_message(&extracted, &log_msg);
-        entries.emplace_back(log_msg);
+        LogEntry entry(log_msg);
+        entry.bag_source_idx = static_cast<int>(bag_idx);
+        entries.emplace_back(entry);
       }
     } catch (const std::exception& e) {
       fprintf(stderr, "[log_viewer] failed to read bag '%s': %s\n", path.c_str(), e.what());

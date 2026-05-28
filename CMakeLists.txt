@@ -31,6 +31,7 @@ add_library(${PROJECT_NAME}
   src/panel_interface.cpp
   src/preferences.cpp
   src/utils.cpp
+  src/panels/bag_source_panel.cpp
   src/panels/details_panel.cpp
   src/panels/exclude_panel.cpp
   src/panels/filter_panel.cpp

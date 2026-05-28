@@ -40,6 +40,7 @@
 #include <log_view/log_store.h>
 #include <log_view/log_writer.h>
 #include <log_view/panel_interface.h>
+#include <log_view/panels/bag_source_panel.h>
 #include <log_view/panels/details_panel.h>
 #include <log_view/panels/exclude_panel.h>
 #include <log_view/panels/filter_panel.h>
@@ -101,6 +102,7 @@ private:
   PANEL* confirm_panel_ = nullptr;
 
   std::vector<PanelInterfacePtr> panels_;
+  BagSourcePanelPtr bag_source_panel_;
   DetailsPanelPtr details_panel_;
   StatusPanelPtr status_panel_;
   LevelPanelPtr level_panel_;
