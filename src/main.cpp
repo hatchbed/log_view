@@ -77,7 +77,8 @@ class LogViewer : public rclcpp::Node {
       clock_sub_ = create_subscription<rosgraph_msgs::msg::Clock>(
         "/clock", rclcpp::SensorDataQoS(),
         [this](const rosgraph_msgs::msg::Clock::SharedPtr msg) {
-          sim_time_ns_ = rclcpp::Time(msg->clock.sec, msg->clock.nanosec, RCL_ROS_TIME).nanoseconds();
+          sim_time_ns_ =
+            rclcpp::Time(msg->clock.sec, msg->clock.nanosec, RCL_ROS_TIME).nanoseconds();
           has_sim_time_ = true;
         });
     }

@@ -28,11 +28,12 @@
 
 #pragma once
 
-#include <curses.h>
-#include <panel.h>
-
 #include <memory>
 #include <vector>
+#include <string>
+
+#include <curses.h>
+#include <panel.h>
 
 #include <rclcpp/rclcpp.hpp>
 
