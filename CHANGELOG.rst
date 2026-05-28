@@ -2,8 +2,8 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+0.5.0 (2026-05-28)
+------------------
 * Add loading logs from one or more bag files.
 * Add bag source panel to toggle per bag filtering.
 * Fix navigation in node selection panel when the panel has no scroll bar.
