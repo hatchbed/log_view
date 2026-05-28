@@ -40,6 +40,7 @@
 #include <log_view/log_store.h>
 #include <log_view/log_writer.h>
 #include <log_view/panel_interface.h>
+#include <log_view/panels/bag_source_panel.h>
 #include <log_view/panels/details_panel.h>
 #include <log_view/panels/exclude_panel.h>
 #include <log_view/panels/filter_panel.h>
@@ -64,6 +65,9 @@ public:
 
   bool exited() const;
 
+  void setOfflineMode(bool offline);
+  void setBagFiles(const std::vector<std::string>& bags);
+
   void setSimTime(const rclcpp::Time& time);
   void setSystemTime(const rclcpp::Time& time);
 
@@ -85,7 +89,10 @@ private:
   Preferences prefs_;
   std::unique_ptr<LogWriter> log_writer_;
 
+  std::vector<std::string> bag_files_;
+
   bool exited_ = false;
+  bool offline_mode_ = false;
   bool mouse_down_ = false;
   bool confirm_clear_ = false;
 
@@ -95,6 +102,7 @@ private:
   PANEL* confirm_panel_ = nullptr;
 
   std::vector<PanelInterfacePtr> panels_;
+  BagSourcePanelPtr bag_source_panel_;
   DetailsPanelPtr details_panel_;
   StatusPanelPtr status_panel_;
   LevelPanelPtr level_panel_;

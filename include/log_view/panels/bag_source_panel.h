@@ -1,4 +1,4 @@
-// Copyright 2020 Hatchbed L.L.C.
+// Copyright 2026 Hatchbed L.L.C.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -29,35 +29,40 @@
 #pragma once
 
 #include <memory>
-#include <string>
-#include <vector>
 
 #include <log_view/log_filter.h>
-#include <log_view/log_store.h>
 #include <log_view/panel_interface.h>
-#include <rclcpp/rclcpp.hpp>
 
 namespace log_view {
 
-class StatusPanel : public PanelInterface {
+class BagSourcePanel : public PanelInterface {
   public:
-  StatusPanel(int height, int width, int y, int x, LogStorePtr& logs, LogFilter& filter)
-  : PanelInterface(height, width, y, x), logs_(logs), filter_(filter) {}
-  virtual ~StatusPanel() {}
+  BagSourcePanel(int height, int width, int y, int x, LogFilter& filter)
+  : PanelInterface(height, width, y, x), filter_(filter) {}
+  virtual ~BagSourcePanel() {}
   virtual void refresh();
-
-  virtual void setSimTime(const rclcpp::Time& time) { sim_time_ = time; has_sim_time_ = true; }
-  virtual void setSystemTime(const rclcpp::Time& time) { system_time_ = time; }
-  virtual void setBagFiles(const std::vector<std::string>& bags) { bag_files_ = bags; }
+  virtual bool handleNavigation(int key);
+  virtual bool handleMouse(const MEVENT& event);
+  virtual bool handleKey(int key);
 
   protected:
-  rclcpp::Time sim_time_ = rclcpp::Time(0);
-  rclcpp::Time system_time_ = rclcpp::Time(0);
-  bool has_sim_time_ = false;
-  LogStorePtr logs_;
+  virtual bool canFocus() const { return true; }
+  virtual bool canNavigate() const { return true; }
+  virtual bool canSelect() const { return true; }
+  virtual size_t getContentSize() const { return filter_.bagSources().size(); }
+  virtual int getContentHeight() const { return height_ - 2; }
+  virtual int getContentWidth() const;
+  virtual void follow(bool enable);
+  virtual void moveTo(size_t index);
+  virtual void setCursor(int64_t cursor) { cursor_ = cursor; }
+  virtual int64_t getCursor() const { return cursor_; }
+  virtual void select();
+
+  size_t cursor_ = 0;
+  int selected_idx_ = 0;
+
   LogFilter& filter_;
-  std::vector<std::string> bag_files_;
 };
-using StatusPanelPtr = std::shared_ptr<StatusPanel>;
+using BagSourcePanelPtr = std::shared_ptr<BagSourcePanel>;
 
 }  // namespace log_view

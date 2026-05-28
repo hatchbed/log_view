@@ -4,6 +4,7 @@ project(log_view)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rcl_interfaces REQUIRED)
+find_package(rosbag2_cpp REQUIRED)
 find_package(rosgraph_msgs REQUIRED)
 find_package(yaml_cpp_vendor REQUIRED)
 find_package(yaml-cpp REQUIRED)
@@ -30,6 +31,7 @@ add_library(${PROJECT_NAME}
   src/panel_interface.cpp
   src/preferences.cpp
   src/utils.cpp
+  src/panels/bag_source_panel.cpp
   src/panels/details_panel.cpp
   src/panels/exclude_panel.cpp
   src/panels/filter_panel.cpp
@@ -48,11 +50,10 @@ target_link_libraries(${PROJECT_NAME}
   yaml-cpp
 )
 
-add_executable(log_viewer src/main.cpp)
-target_link_libraries(log_viewer
-  ${PROJECT_NAME}
-  rosgraph_msgs::rosgraph_msgs__rosidl_typesupport_cpp
-)
+add_executable(log_viewer src/main.cpp src/bag_loader.cpp)
+target_link_libraries(log_viewer ${PROJECT_NAME}
+  rosbag2_cpp::rosbag2_cpp
+  rosgraph_msgs::rosgraph_msgs__rosidl_typesupport_cpp)
 
 #############
 ## Install ##

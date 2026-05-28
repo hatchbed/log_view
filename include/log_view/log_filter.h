@@ -64,6 +64,11 @@ public:
   void invertNodes();
   void setNodeWhitelist(const std::set<std::string>& whitelist);
 
+  void setBagSources(const std::vector<std::string>& paths);
+  void toggleBagSource(int idx);
+  void selectAllBagSources();
+  void invertBagSources();
+
   bool getDebugLevel() const { return debug_level_; }
   bool getInfoLevel() const { return info_level_; }
   bool getWarnLevel() const { return warn_level_; }
@@ -99,6 +104,8 @@ public:
 
   const std::deque<LogLine>& indices() const { return log_indices_; }
   const std::map<std::string, NodeData>& nodes() const { return nodes_; }
+  const std::vector<std::string>& bagPaths() const { return bag_paths_; }
+  const std::vector<BagSourceData>& bagSources() const { return bag_sources_; }
   size_t filteredCount() const;
 
 private:
@@ -147,6 +154,10 @@ private:
   std::vector<std::string> exclude_list_;
 
   std::map<std::string, NodeData> nodes_;
+
+  std::vector<std::string> bag_paths_;
+  std::vector<BagSourceData> bag_sources_;
+  size_t deselected_bag_count_ = 0;
 };
 using LogFilterPtr = std::shared_ptr<LogFilter>;
 

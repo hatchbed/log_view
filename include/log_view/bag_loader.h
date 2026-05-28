@@ -1,4 +1,4 @@
-// Copyright 2020 Hatchbed L.L.C.
+// Copyright 2026 Hatchbed L.L.C.
 //
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
@@ -28,36 +28,17 @@
 
 #pragma once
 
-#include <memory>
 #include <string>
 #include <vector>
 
-#include <log_view/log_filter.h>
 #include <log_view/log_store.h>
-#include <log_view/panel_interface.h>
-#include <rclcpp/rclcpp.hpp>
 
 namespace log_view {
 
-class StatusPanel : public PanelInterface {
-  public:
-  StatusPanel(int height, int width, int y, int x, LogStorePtr& logs, LogFilter& filter)
-  : PanelInterface(height, width, y, x), logs_(logs), filter_(filter) {}
-  virtual ~StatusPanel() {}
-  virtual void refresh();
-
-  virtual void setSimTime(const rclcpp::Time& time) { sim_time_ = time; has_sim_time_ = true; }
-  virtual void setSystemTime(const rclcpp::Time& time) { system_time_ = time; }
-  virtual void setBagFiles(const std::vector<std::string>& bags) { bag_files_ = bags; }
-
-  protected:
-  rclcpp::Time sim_time_ = rclcpp::Time(0);
-  rclcpp::Time system_time_ = rclcpp::Time(0);
-  bool has_sim_time_ = false;
-  LogStorePtr logs_;
-  LogFilter& filter_;
-  std::vector<std::string> bag_files_;
-};
-using StatusPanelPtr = std::shared_ptr<StatusPanel>;
+// Reads all rcl_interfaces/msg/Log messages from each bag path, sorts them
+// chronologically, and populates `logs`.  A single marker entry is prepended
+// whose timestamp sorts before all bag data.  Bags that cannot be opened are
+// skipped with a warning on stderr.
+void loadBagFiles(const std::vector<std::string>& paths, LogStorePtr& logs);
 
 }  // namespace log_view

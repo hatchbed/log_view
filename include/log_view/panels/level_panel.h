@@ -60,10 +60,18 @@ class LevelPanel : public PanelInterface {
     help_open_ = std::move(cb);
   }
 
+  void setBagMode(bool bag_mode) { bag_mode_ = bag_mode; }
+
+  void setBagPanelOpenCallback(std::function<bool()> cb) {
+    bag_panel_open_ = std::move(cb);
+  }
+
   protected:
   LogFilter& filter_;
   std::function<bool()> show_invert_hint_;
   std::function<bool()> help_open_;
+  std::function<bool()> bag_panel_open_;
+  bool bag_mode_ = false;
 };
 using LevelPanelPtr = std::shared_ptr<LevelPanel>;
 

@@ -154,6 +154,44 @@ void LogFilter::setNodeWhitelist(const std::set<std::string>& whitelist) {
   }
 }
 
+void LogFilter::setBagSources(const std::vector<std::string>& paths) {
+  bag_paths_ = paths;
+  bag_sources_.clear();
+  bag_sources_.resize(paths.size(), {true, 0});
+  deselected_bag_count_ = 0;
+}
+
+void LogFilter::toggleBagSource(int idx) {
+  if (idx < 0 || idx >= static_cast<int>(bag_sources_.size())) {
+    return;
+  }
+  auto& src = bag_sources_[idx];
+  src.selected = !src.selected;
+  if (src.selected) {
+    if (deselected_bag_count_ > 0) { deselected_bag_count_--; }
+  } else {
+    deselected_bag_count_++;
+  }
+  reset();
+}
+
+void LogFilter::selectAllBagSources() {
+  for (auto& src : bag_sources_) {
+    src.selected = true;
+  }
+  deselected_bag_count_ = 0;
+  reset();
+}
+
+void LogFilter::invertBagSources() {
+  deselected_bag_count_ = 0;
+  for (auto& src : bag_sources_) {
+    src.selected = !src.selected;
+    if (!src.selected) { deselected_bag_count_++; }
+  }
+  reset();
+}
+
 
 void LogFilter::clearLogs() {
   for (auto it = nodes_.begin(); it != nodes_.end(); ) {
@@ -163,6 +201,9 @@ void LogFilter::clearLogs() {
     } else {
       it = nodes_.erase(it);
     }
+  }
+  for (auto& src : bag_sources_) {
+    src.count = 0;
   }
   logs_->clear();
   clearSearch();
@@ -454,6 +495,16 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
     nodes_[entry.node] = {false, 1};
   } else if (new_entry) {
     node->second.count++;
+  }
+
+  if (!bag_sources_.empty() && entry.bag_source_idx >= 0) {
+    auto idx = entry.bag_source_idx;
+    if (idx < static_cast<int>(bag_sources_.size())) {
+      if (new_entry) { bag_sources_[idx].count++; }
+      if (deselected_bag_count_ > 0 && !bag_sources_[idx].selected) {
+        return false;
+      }
+    }
   }
 
   if (entry.level == rcl_interfaces::msg::Log::DEBUG) {

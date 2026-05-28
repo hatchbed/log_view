@@ -34,10 +34,6 @@
 
 namespace log_view {
 
-// TODO(malban): handle case where terminal is too small
-
-// TODO(malban): support show/hide timestamps
-
 HelpPanel::HelpPanel(int height, int width, int y, int x) :
   PanelInterface(height, width, y, x),
   keys_({

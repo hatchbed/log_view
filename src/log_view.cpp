@@ -41,6 +41,15 @@ LogView::LogView(LogStorePtr& logs) :
   log_filter_(logs_)
 {}
 
+void LogView::setOfflineMode(bool offline) {
+  offline_mode_ = offline;
+}
+
+void LogView::setBagFiles(const std::vector<std::string>& bags) {
+  bag_files_ = bags;
+  log_filter_.setBagSources(bags);
+}
+
 LogView::~LogView() {
   close();
 }
@@ -48,17 +57,17 @@ LogView::~LogView() {
 void LogView::init() {
   prefs_.load();
 
-  if (prefs_.persist_logs) {
-    log_writer_ = std::make_unique<LogWriter>(
-      prefs_.workspace_dir, prefs_.log_rotate_size, prefs_.log_max_size);
-    for (const auto& entry : log_writer_->loadAll()) {
-      logs_->addEntry(entry);
+  if (!offline_mode_) {
+    if (prefs_.persist_logs) {
+      log_writer_ = std::make_unique<LogWriter>(
+        prefs_.workspace_dir, prefs_.log_rotate_size, prefs_.log_max_size);
+      for (const auto& entry : log_writer_->loadAll()) {
+        logs_->addEntry(entry);
+      }
+      logs_->setWriter(log_writer_.get());
+      log_writer_->start();
     }
-    logs_->setWriter(log_writer_.get());
-    log_writer_->start();
-  }
 
-  {
     auto marker = makeMarkerEntry("Session Started At");
     logs_->addEntry(marker);
     if (log_writer_) {
@@ -109,6 +118,9 @@ void LogView::init() {
   panels_.push_back(log_panel_);
 
   status_panel_ = std::make_shared<StatusPanel>(1, COLS, 0, 0, logs_, log_filter_);
+  if (!bag_files_.empty()) {
+    status_panel_->setBagFiles(bag_files_);
+  }
   panels_.push_back(status_panel_);
 
   level_panel_ = std::make_shared<LevelPanel>(1, COLS, LINES - 1, 0, log_filter_);
@@ -137,6 +149,17 @@ void LogView::init() {
     return node_panel_->visible() && node_panel_->focus() &&
            !help_panel_->visible() && !prefs_panel_->visible();
   });
+
+  if (!bag_files_.empty()) {
+    bag_source_panel_ = std::make_shared<BagSourcePanel>(
+      LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
+    bag_source_panel_->hide(true);
+    panels_.push_back(bag_source_panel_);
+    level_panel_->setBagMode(true);
+    level_panel_->setBagPanelOpenCallback([this]() {
+      return bag_source_panel_->visible();
+    });
+  }
 
   details_panel_ = std::make_shared<DetailsPanel>(
     LINES - 2, COLS / 2, 1, COLS / 2 - (COLS + 1) % 2, log_filter_);
@@ -379,6 +402,7 @@ void LogView::update() {
       prefs_panel_->hide(prefs_panel_->visible());
     } else if (ch == ctrl('n')) {
       details_panel_->hide(true);
+      if (bag_source_panel_) { bag_source_panel_->hide(true); }
       node_panel_->hide(node_panel_->visible());
       if (node_panel_->focus()) {
         unfocusOthers(node_panel_);
@@ -386,8 +410,19 @@ void LogView::update() {
         focusNext(node_panel_);
       }
       refreshLayout();
+    } else if (ch == ctrl('b') && bag_source_panel_) {
+      node_panel_->hide(true);
+      details_panel_->hide(true);
+      bag_source_panel_->hide(bag_source_panel_->visible());
+      if (bag_source_panel_->focus()) {
+        unfocusOthers(bag_source_panel_);
+      } else {
+        focusNext(bag_source_panel_);
+      }
+      refreshLayout();
     } else if (ch == ctrl('d')) {
       node_panel_->hide(true);
+      if (bag_source_panel_) { bag_source_panel_->hide(true); }
       details_panel_->hide(details_panel_->visible());
       if (details_panel_->focus()) {
         unfocusOthers(details_panel_);
@@ -422,6 +457,10 @@ void LogView::update() {
     node_panel_->refresh();
   }
 
+  if (bag_source_panel_ && bag_source_panel_->visible()) {
+    bag_source_panel_->refresh();
+  }
+
   if (details_panel_->visible()) {
     details_panel_->refresh();
   }
@@ -453,7 +492,8 @@ void LogView::update() {
 void LogView::refreshLayout() {
   status_panel_->resize(1, COLS, 0, 0);
   int side_start = COLS / 2 - (COLS + 1) % 2 + !log_panel_->scrollbar();
-  bool side_visible = node_panel_->visible() || details_panel_->visible();
+  bool side_visible = node_panel_->visible() || details_panel_->visible() ||
+                      (bag_source_panel_ && bag_source_panel_->visible());
   log_panel_->setRightEdge(side_visible ? side_start : 0);
   log_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
@@ -469,6 +509,12 @@ void LogView::refreshLayout() {
   node_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
     COLS / 2, 1, side_start);
+  if (bag_source_panel_) {
+    bag_source_panel_->resize(
+      LINES -
+        (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
+      COLS / 2, 1, side_start);
+  }
   details_panel_->resize(
     LINES - (2 + filter_panel_->visible() + exclude_panel_->visible() + search_panel_->visible()),
     COLS / 2, 1, side_start);

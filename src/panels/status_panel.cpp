@@ -36,22 +36,41 @@ void StatusPanel::refresh() {
   mvwprintw(window_, 0, 0, "%s", clear.c_str());
   size_t total = logs_->logCount();
   size_t filtered = filter_.filteredCount();
-  if (filtered < total) {
-    mvwprintw(window_, 0, 0, "logs: %zu of %zu", filtered, total);
+
+  if (!bag_files_.empty()) {
+    std::string label = (bag_files_.size() == 1) ? "from bag: " : "from bags: ";
+    for (size_t i = 0; i < bag_files_.size(); i++) {
+      if (i > 0) { label += ", "; }
+      label += bag_files_[i];
+    }
+    std::string left;
+    if (filtered < total) {
+      left = "logs: " + std::to_string(filtered) + " of " + std::to_string(total) + " " + label;
+    } else {
+      left = "logs: " + std::to_string(total) + " " + label;
+    }
+    if (static_cast<int>(left.size()) > width_) {
+      left = left.substr(0, static_cast<size_t>(width_ - 3)) + "...";
+    }
+    mvwprintw(window_, 0, 0, "%s", left.c_str());
   } else {
-    mvwprintw(window_, 0, 0, "logs: %zu", total);
+    if (filtered < total) {
+      mvwprintw(window_, 0, 0, "logs: %zu of %zu", filtered, total);
+    } else {
+      mvwprintw(window_, 0, 0, "logs: %zu", total);
+    }
+
+    std::string system_time = toString(system_time_.seconds(), 2);
+    std::string time_str;
+    if (has_sim_time_) {
+      std::string sim_time = toString(sim_time_.seconds(), 2);
+      time_str = "sim time: " + sim_time + "  system time: " + system_time;
+    } else {
+      time_str = "system time: " + system_time;
+    }
+    mvwprintw(window_, 0, width_ - time_str.size(), "%s", time_str.c_str());
   }
 
-  std::string system_time = toString(system_time_.seconds(), 2);
-
-  std::string time_str;
-  if (has_sim_time_) {
-    std::string sim_time = toString(sim_time_.seconds(), 2);
-    time_str = "sim time: " + sim_time + "  system time: " + system_time;
-  } else {
-    time_str = "system time: " + system_time;
-  }
-  mvwprintw(window_, 0, width_ - time_str.size(), "%s", time_str.c_str());
   wattroff(window_, A_REVERSE);
 }
 

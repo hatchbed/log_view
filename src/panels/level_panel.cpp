@@ -37,10 +37,18 @@ void LevelPanel::refresh() {
   mvwprintw(window_, 0, 0, "%s", clear.c_str());
   mvwprintw(window_, 0, 0, " debug  info  warn  error  fatal      all nodes");
   wattroff(window_, A_BOLD);
-  if (show_invert_hint_ && show_invert_hint_() && width_ - 34 > 47) {
-    mvwprintw(window_, 0, width_ - 34, "i: invert nodes  ");
-  }
   bool help_open = help_open_ && help_open_();
+  if (bag_mode_) {
+    if (show_invert_hint_ && show_invert_hint_() && width_ - 54 > 47) {
+      mvwprintw(window_, 0, width_ - 54, "i: invert nodes  ");
+    }
+    bool bag_open = bag_panel_open_ && bag_panel_open_();
+    mvwprintw(window_, 0, width_ - 36, bag_open ? "CTRL+b: hide bags" : "CTRL+b: view bags");
+  } else {
+    if (show_invert_hint_ && show_invert_hint_() && width_ - 34 > 47) {
+      mvwprintw(window_, 0, width_ - 34, "i: invert nodes  ");
+    }
+  }
   mvwprintw(window_, 0, width_ - 17, help_open ? "CTRL+h: hide help" : "CTRL+h: view help");
   wattroff(window_, A_REVERSE);
 
