@@ -159,6 +159,10 @@ void LogView::init() {
     level_panel_->setBagPanelOpenCallback([this]() {
       return bag_source_panel_->visible();
     });
+    level_panel_->setShowBagInvertHintCallback([this]() {
+      return bag_source_panel_->visible() && bag_source_panel_->focus() &&
+             !help_panel_->visible() && !prefs_panel_->visible();
+    });
   }
 
   details_panel_ = std::make_shared<DetailsPanel>(

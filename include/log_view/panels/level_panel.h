@@ -66,9 +66,14 @@ class LevelPanel : public PanelInterface {
     bag_panel_open_ = std::move(cb);
   }
 
+  void setShowBagInvertHintCallback(std::function<bool()> cb) {
+    show_bag_invert_hint_ = std::move(cb);
+  }
+
   protected:
   LogFilter& filter_;
   std::function<bool()> show_invert_hint_;
+  std::function<bool()> show_bag_invert_hint_;
   std::function<bool()> help_open_;
   std::function<bool()> bag_panel_open_;
   bool bag_mode_ = false;

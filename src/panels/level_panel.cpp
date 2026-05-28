@@ -39,8 +39,11 @@ void LevelPanel::refresh() {
   wattroff(window_, A_BOLD);
   bool help_open = help_open_ && help_open_();
   if (bag_mode_) {
-    if (show_invert_hint_ && show_invert_hint_() && width_ - 54 > 47) {
-      mvwprintw(window_, 0, width_ - 54, "i: invert nodes  ");
+    bool show_node_invert = show_invert_hint_ && show_invert_hint_();
+    bool show_bag_invert  = show_bag_invert_hint_ && show_bag_invert_hint_();
+    if ((show_node_invert || show_bag_invert) && width_ - 54 > 47) {
+      mvwprintw(window_, 0, width_ - 54,
+                show_node_invert ? "i: invert nodes  " : "i: invert bags   ");
     }
     bool bag_open = bag_panel_open_ && bag_panel_open_();
     mvwprintw(window_, 0, width_ - 36, bag_open ? "CTRL+b: hide bags" : "CTRL+b: view bags");
