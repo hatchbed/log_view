@@ -23,6 +23,7 @@ Log messages can be filtered based on:
  - node
  - whitelist text filter
  - exclude text filter
+ - bag source (when loading from bag files)
 
 log_viewer also supports text searches and jumping from match to match.
 
@@ -30,6 +31,25 @@ Log messages are copied to the clipboard by selecting them.
 
 Like swri_console, log_viewer doesn't need ROS to be running to start and will automatically connect/reconnect when it
 becomes available.
+
+### Loading from Bag Files
+
+log_viewer can load logs directly from one or more rosbag2 bag files instead of subscribing to a live ROS topic:
+
+```
+ros2 run log_view log_viewer /path/to/bag [/path/to/bag2 ...]
+```
+
+In this mode no ROS subscription is created. All messages from the supplied bags are loaded before the viewer starts,
+sorted chronologically. The status bar shows the log count and the bag source(s) rather than the system time:
+
+```
+logs: 1234 from bag: /path/to/bag
+```
+
+When multiple bags are provided, a **bag source filter panel** (`CTRL-b`) becomes available. It lists each bag with
+its message count and lets you toggle individual bags on or off to include or exclude their messages from the view.
+Within the panel, pressing `i` inverts the selection and `CTRL-a` selects all bags.
 
 ### Log Persistence
 
@@ -85,6 +105,7 @@ F4           Show/hide error level
 F5           Show/hide fatal level
 F7           Enable/disable node filter
 CTRL-a       Select all log lines and copy to clipboard
+CTRL-b       Show/hide bag source filter (bag mode only)
 CTRL-d       Show/hide message details
 CTRL-e       Enable/disable text exclude filter
 CTRL-f       Enable/disable text include filter
