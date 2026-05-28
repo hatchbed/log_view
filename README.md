@@ -116,4 +116,3 @@ a bug in the currently distributed version of ncurses, mousewheel scrolling only
 
 ### Possible Improvements
  - Regular expression support
- - Support loading logs directly from bag files
