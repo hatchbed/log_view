@@ -31,7 +31,8 @@
 namespace log_view {
 
 void FilterPanel::refresh() {
-  mvwprintw(window_, 0, 0, "filter: %s", input_text_.c_str());
+  printStyledAt(window_, 0, 0, focus() ? A_BOLD : 0, "filter: ");
+  mvwprintw(window_, 0, inputOffset(), "%s", input_text_.c_str());
 }
 
 void FilterPanel::activate(bool enable) {

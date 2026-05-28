@@ -47,16 +47,12 @@ HelpPanel::HelpPanel(int height, int width, int y, int x) :
     {10, "F7", "Enable/disable node filter"},
     {11, "CTRL-a", "Select all"},
     {12, "CTRL-d", "Show/hide message details"},
-    {13, "CTRL-i", "Invert node selection"},
-    {14, "CTRL-n", "Show/hide node selection"},
-    {15, "CTRL-s", "Search for matching string"},
-    {16, "CTRL-x", "Clear search"},
-    {17, "Backspace", "Prev match"},
-    {18, "Enter", "Next match"},
-    {19, "CTRL-e", "Enable/disable text exclude filter"},
-    {20, "CTRL-f", "Enable/disable text include filter"},
-    {21, "CTRL-k", "Show/hide preferences"},
-    {22, "CTRL-r", "Clear message history"}})
+    {13, "CTRL-n", "Show/hide node selection"},
+    {14, "CTRL-s", "Search for matching string"},
+    {15, "CTRL-e", "Enable/disable text exclude filter"},
+    {16, "CTRL-f", "Enable/disable text include filter"},
+    {17, "CTRL-k", "Show/hide preferences"},
+    {18, "CTRL-r", "Clear message history"}})
 {
   for (const auto& key : keys_) {
     longest_key_ = std::max(longest_key_, key.key.length());
@@ -112,7 +108,7 @@ bool HelpPanel::handleKey(int key) {
     return false;
   }
 
-  if (key == ctrl('h')) {
+  if (key == ctrl('h') || key == 27) {
     hide(visible());
   } else if (key == KEY_RESIZE || key == ctrl('q') || key == ctrl('c')
              || key == KEY_UP || key == KEY_DOWN

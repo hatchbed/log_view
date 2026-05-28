@@ -27,6 +27,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 
 #include <log_view/panel_interface.h>
+#include <log_view/utils.h>
 
 #include <cmath>
 
@@ -96,7 +97,7 @@ bool PanelInterface::handleInput(int val) {
       input_loc_ = -1;
     }
     key_used = true;
-  } else if (input_loc_ != 0 && val == KEY_LEFT) {
+  } else if (!input_text_.empty() && input_loc_ != 0 && val == KEY_LEFT) {
     if (input_loc_ == -1) {
       input_loc_ = input_text_.size();
     }
@@ -147,10 +148,10 @@ bool PanelInterface::handleNavigation(int key) {
   } else if (key == KEY_HOME) {
     moveTo(0);
     key_used = true;
-  } else if (key == KEY_LEFT) {
+  } else if (key == KEY_LEFT && shift_ > 0) {
     shift(-5);
     key_used = true;
-  } else if (key == KEY_RIGHT) {
+  } else if (key == KEY_RIGHT && shift_ + getContentWidth() < max_length_) {
     shift(5);
     key_used = true;
   } else if (canSelect() && key == ' ') {
@@ -193,9 +194,14 @@ void PanelInterface::hide(bool enable) {
 }
 
 bool PanelInterface::setFocus(bool enable) {
+  bool prev = focus_;
   focus_ = false;
   if (enable && !hidden_ && canFocus()) {
     focus_ = true;
+  }
+
+  if (focus_ != prev) {
+    forceRefresh();
   }
 
   return focus_;
@@ -232,9 +238,7 @@ void PanelInterface::drawScrollBar(size_t count, int height, int y, int x) {
     float percent = std::max(0.0f, static_cast<float>((cursor - height)) / (count - height));
     int scroll_loc = std::round(percent * (height - 1));
 
-    wattron(window_, A_REVERSE);
-    mvwprintw(window_, y + scroll_loc, x, " ");
-    wattroff(window_, A_REVERSE);
+    printStyledAt(window_, y + scroll_loc, x, A_REVERSE, " ");
   } else {
     int size = 2 * height - count;
     cursor = std::max(static_cast<int64_t>(0), cursor - height);

@@ -30,7 +30,6 @@
 
 #include <string>
 
-#include <rcl_interfaces/msg/log.hpp>
 #include <log_view/datatypes.h>
 #include <log_view/utils.h>
 
@@ -84,21 +83,7 @@ void DetailsPanel::refresh() {
   // Build level text early — needed for both content-size counting and rendering.
   std::string level_text;
   if (entry_ptr) {
-    level_text = "level: ";
-    uint8_t lvl = entry_ptr->level;
-    if (lvl == rcl_interfaces::msg::Log::DEBUG) {
-      level_text += "DEBUG";
-    } else if (lvl == rcl_interfaces::msg::Log::INFO) {
-      level_text += "INFO";
-    } else if (lvl == rcl_interfaces::msg::Log::WARN) {
-      level_text += "WARN";
-    } else if (lvl == rcl_interfaces::msg::Log::ERROR) {
-      level_text += "ERROR";
-    } else if (lvl == rcl_interfaces::msg::Log::FATAL) {
-      level_text += "FATAL";
-    } else {
-      level_text += std::to_string(lvl);
-    }
+    level_text = "level: " + levelName(entry_ptr->level);
   }
 
   // Compute the total number of content rows for the current entry at a given width.
@@ -139,7 +124,7 @@ void DetailsPanel::refresh() {
   }
 
   box(window_, 0, 0);
-  mvwprintw(window_, 0, width_ / 2 - 3, " details ");
+  printStyledAt(window_, 0, width_ / 2 - 3, focus() ? A_BOLD : 0, " details ");
 
   int max_width = getContentWidth();
 
@@ -164,9 +149,33 @@ void DetailsPanel::refresh() {
     return row;
   };
 
-  static const int kAnsiPairs[] = {
-    CP_ANSI_BLACK, CP_ANSI_RED,   CP_ANSI_GREEN,   CP_ANSI_YELLOW,
-    CP_ANSI_BLUE,  CP_ANSI_MAGENTA, CP_ANSI_CYAN,  CP_ANSI_WHITE
+  // Like printWrapped but prints `key` in blue and `value` in default color.
+  auto printWrappedWithKey =
+      [&](int row, const std::string& key, const std::string& value) -> int {
+    const std::string full = key + value;
+    {
+      int dr = row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        printStyledAt(window_, dr, 1, kAttrBoldBlue,
+          "%.*s", std::min(static_cast<int>(key.size()), max_width), key.c_str());
+        int val_col   = 1 + static_cast<int>(key.size());
+        int val_width = max_width - static_cast<int>(key.size());
+        if (val_width > 0) {
+          mvwaddnstr(window_, dr, val_col, value.c_str(), val_width);
+        }
+      }
+    }
+    row++;
+    size_t offset = static_cast<size_t>(max_width);
+    while (offset < full.size()) {
+      int dr = row - scroll_top;
+      if (dr >= 1 && dr <= height_ - 2) {
+        mvwaddnstr(window_, dr, 3, full.c_str() + offset, max_width - 2);
+      }
+      row++;
+      offset += static_cast<size_t>(max_width - 2);
+    }
+    return row;
   };
 
   // Like printWrapped but strips ANSI before layout then repaints color attributes.
@@ -215,14 +224,12 @@ void DetailsPanel::refresh() {
           size_t chunk = std::min(remaining, static_cast<size_t>(space));
           int dr = cur_row - scroll_top;
           if (has_attr && dr >= 1 && dr <= height_ - 2) {
-            if (has_color) { wattron(window_, COLOR_PAIR(kAnsiPairs[seg.ansi_fg])); }
-            if (seg.bold)  { wattron(window_, A_BOLD); }
-            if (seg.dim)   { wattron(window_, A_DIM); }
-            mvwprintw(window_, dr, col_off + vis_col,
+            attr_t attr = 0;
+            if (has_color) attr |= COLOR_PAIR(kAnsiPairs[seg.ansi_fg]);
+            if (seg.bold)  attr |= A_BOLD;
+            if (seg.dim)   attr |= A_DIM;
+            printStyledAt(window_, dr, col_off + vis_col, attr,
               "%.*s", static_cast<int>(chunk), seg.text.c_str() + seg_off);
-            if (seg.dim)   { wattroff(window_, A_DIM); }
-            if (seg.bold)  { wattroff(window_, A_BOLD); }
-            if (has_color) { wattroff(window_, COLOR_PAIR(kAnsiPairs[seg.ansi_fg])); }
           }
           vis_col   += static_cast<int>(chunk);
           seg_off   += chunk;
@@ -239,21 +246,21 @@ void DetailsPanel::refresh() {
     for (int i = 0; i < 6; i++) {
       int dr = (i + 1) - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        mvwprintw(window_, dr, 1, "%s", labels[i]);
+        printStyledAt(window_, dr, 1, kAttrBoldBlue, "%s", labels[i]);
       }
     }
   } else {
     const auto& entry = *entry_ptr;
     int row = 1;
-    row = printWrapped(row, "stamp: " + toString(entry.stamp.seconds(), 4));
-    row = printWrapped(row, level_text);
-    row = printWrapped(row, "file: " + entry.file);
-    row = printWrapped(row, "function: " + entry.function);
-    row = printWrapped(row, "line: " + std::to_string(entry.line));
+    row = printWrappedWithKey(row, "stamp: ", toString(entry.stamp.seconds(), 4));
+    row = printWrappedWithKey(row, "level: ", level_text.substr(7));
+    row = printWrappedWithKey(row, "file: ", entry.file);
+    row = printWrappedWithKey(row, "function: ", entry.function);
+    row = printWrappedWithKey(row, "line: ", std::to_string(entry.line));
     {
       int dr = row - scroll_top;
       if (dr >= 1 && dr <= height_ - 2) {
-        mvwprintw(window_, dr, 1, "message: ");
+        printStyledAt(window_, dr, 1, kAttrBoldBlue, "message: ");
       }
     }
     row++;

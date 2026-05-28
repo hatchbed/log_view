@@ -65,8 +65,9 @@ public:
   bool exited() const;
 
   void setOfflineMode(bool offline);
+  void setBagFiles(const std::vector<std::string>& bags);
 
-  void setRosTime(const rclcpp::Time& time);
+  void setSimTime(const rclcpp::Time& time);
   void setSystemTime(const rclcpp::Time& time);
 
   void update();
@@ -74,7 +75,6 @@ public:
 private:
   void refreshLayout();
 
-  size_t viewSize() const;
   int prefsPanelWidth() const;
 
   void tab();
@@ -88,12 +88,13 @@ private:
   Preferences prefs_;
   std::unique_ptr<LogWriter> log_writer_;
 
+  std::vector<std::string> bag_files_;
+
   bool exited_ = false;
   bool offline_mode_ = false;
   bool mouse_down_ = false;
   bool confirm_clear_ = false;
 
-  bool node_select_ = true;
   bool log_scroll_ = false;
 
   WINDOW* confirm_win_ = nullptr;

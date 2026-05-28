@@ -28,6 +28,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
@@ -40,17 +41,21 @@ namespace log_view {
 class PrefsPanel : public PanelInterface {
 public:
   PrefsPanel(int height, int width, int y, int x, Preferences& prefs);
-  virtual ~PrefsPanel() {}
-  virtual void refresh();
-  virtual bool handleKey(int key);
+  ~PrefsPanel() {}
+  void refresh() override;
+  bool handleKey(int key) override;
   bool handleMouse(const MEVENT& event) override { return !hidden(); }
 
   void setOnSave(std::function<void()> cb) { on_save_ = cb; }
+  void setOnPreview(std::function<void()> cb) { on_preview_ = cb; }
 
 protected:
-  virtual bool canFocus() const { return false; }
+  bool canFocus() const override { return false; }
   bool canNavigate() const override { return !hidden(); }
   void activate(bool enable) override;
+  size_t getContentSize() const override { return 19; }
+  int getContentHeight() const override { return std::max(1, height_ - 5); }
+  int64_t getCursor() const override { return scroll_top_ + getContentHeight(); }
 
 private:
   void cycleTimestampFormat(int direction);
@@ -58,11 +63,20 @@ private:
   void cycleMaxSize(int direction);
   bool isFieldEnabled(int field) const;
   static std::string formatSize(size_t bytes);
+  void snapSelectionToViewport(bool prefer_top);
+  void ensureSelectedVisible();
+
+  int visRow(int logical_row) const;
+  void printSectionHeader(int logical_row, const char* label, bool enabled);
+  void printValueRow(int logical_row, bool focused, bool enabled, const std::string& value);
 
   Preferences& prefs_;
   Preferences pending_;
+  Preferences original_;
   int selected_ = 0;
+  int scroll_top_ = 0;
   std::function<void()> on_save_;
+  std::function<void()> on_preview_;
 
   static constexpr int kNumFields            = 6;
   static constexpr int kFieldTimestamp       = 0;
@@ -91,6 +105,6 @@ private:
   static constexpr int kRotateSizeCount = 6;
   static constexpr int kMaxSizeCount    = 6;
 };
-typedef std::shared_ptr<PrefsPanel> PrefsPanelPtr;
+using PrefsPanelPtr = std::shared_ptr<PrefsPanel>;
 
 }  // namespace log_view

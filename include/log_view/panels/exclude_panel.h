@@ -50,6 +50,6 @@ class ExcludePanel : public PanelInterface {
 
   LogFilter& filter_;
 };
-typedef std::shared_ptr<ExcludePanel> ExcludePanelPtr;
+using ExcludePanelPtr = std::shared_ptr<ExcludePanel>;
 
 }  // namespace log_view

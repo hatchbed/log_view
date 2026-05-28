@@ -28,6 +28,8 @@
 
 #include <log_view/panels/node_panel.h>
 
+#include <log_view/utils.h>
+
 namespace log_view {
 
 void NodePanel::refresh() {
@@ -40,7 +42,7 @@ void NodePanel::refresh() {
   cleared_ = false;
 
   box(window_, 0, 0);
-  mvwprintw(window_, 0, width_ / 2 - 3, " nodes ");
+  printStyledAt(window_, 0, width_ / 2 - 3, focus() ? A_BOLD : 0, " nodes ");
 
   size_t start_idx = cursor;
   if (start_idx >= getContentHeight()) {
@@ -76,13 +78,7 @@ void NodePanel::refresh() {
 
     std::string text = name + ": " + std::to_string(node_data.count);
 
-    if (selected) {
-      wattron(window_, A_REVERSE);
-    }
-
-    if (hover) {
-      wattron(window_, A_BOLD);
-    }
+    attr_t attr = (selected ? A_REVERSE : 0) | (hover ? A_BOLD : 0);
 
     max_length_ = std::max(max_length_, text.size());
 
@@ -98,27 +94,31 @@ void NodePanel::refresh() {
       cropped = true;
     }
 
-    mvwprintw(window_, i + 1, 1, "%s", text.c_str());
+    printStyledAt(window_, i + 1, 1, attr, "%s", text.c_str());
 
-    if (hover) {
-      wattroff(window_, A_BOLD);
-    }
-
-    if (selected) {
-      wattroff(window_, A_REVERSE);
-    }
-
-    if (shift_  > 0) {
+    if (shift_ > 0) {
       mvwprintw(window_, i + 1, 1, "  ");
-      wattron(window_, A_REVERSE);
-      mvwprintw(window_, i + 1, 1, "<");
-      wattroff(window_, A_REVERSE);
+      printStyledAt(window_, i + 1, 1, A_REVERSE, "<");
     }
     if (cropped) {
       mvwprintw(window_, i + 1, getContentWidth() - 1, "  ");
-      wattron(window_, A_REVERSE);
-      mvwprintw(window_, i + 1, getContentWidth(), ">");
-      wattroff(window_, A_REVERSE);
+      printStyledAt(window_, i + 1, getContentWidth(), A_REVERSE, ">");
+    }
+
+    {
+      int erased     = (shift_ > 0) ? static_cast<int>(shift_) + 2 : 0;
+      int ind_hidden = (shift_ > 0) ? 2 : 0;
+      int vis_col    = 1 + ind_hidden;
+      int name_in_text = std::max(0, static_cast<int>(name.size()) - erased);
+      int vis_name     = std::max(0, name_in_text - ind_hidden);
+      int vis_text     = std::max(0, static_cast<int>(text.size()) - ind_hidden);
+      int chgat_n      = std::min(vis_name, vis_text);
+      if (chgat_n > 0) {
+        attr_t name_attr = (selected ? A_REVERSE : 0) | (hover ? A_BOLD : 0);
+        if (COLORS < 16) { name_attr |= A_BOLD; }  // bold required for brightness on 8-color
+        mvwchgat(window_, static_cast<int>(i) + 1, vis_col, chgat_n, name_attr, CP_BRIGHT_BLUE,
+                 nullptr);
+      }
     }
   }
 
@@ -136,7 +136,7 @@ bool NodePanel::handleKey(int key) {
       filter_.selectAllNodes();
 
       return true;
-  } else if (key == ctrl('i')) {
+  } else if (key == 'i' && focus()) {
       filter_.invertNodes();
 
       return true;
@@ -240,8 +240,6 @@ bool NodePanel::handleNavigation(int key) {
 
   int view_height  = getContentHeight();
   int content_size = static_cast<int>(getContentSize());
-
-  if (content_size <= view_height) { return false; }
 
   int64_t selection = 0;
   int64_t idx = 0;

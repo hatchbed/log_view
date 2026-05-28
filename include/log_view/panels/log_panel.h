@@ -51,7 +51,10 @@ class LogPanel : public PanelInterface {
   virtual void endSelect(int row);
   virtual bool handleMouse(const MEVENT& event);
   virtual bool handleKey(int key);
+  virtual void extendSelect(int key);
   virtual void resize(int height, int width, int y, int x);
+
+  void setRightEdge(int col) { right_edge_ = col; }
 
   protected:
   virtual bool canNavigate() const { return true; }
@@ -70,7 +73,8 @@ class LogPanel : public PanelInterface {
   bool mouse_down_ = false;
   bool filled_ = false;
   mutable int64_t first_stamp_ns_ = -1;
+  int right_edge_ = 0;  // start col of side panel overlay, 0 = none
 };
-typedef std::shared_ptr<LogPanel> LogPanelPtr;
+using LogPanelPtr = std::shared_ptr<LogPanel>;
 
 }  // namespace log_view

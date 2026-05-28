@@ -50,6 +50,6 @@ class FilterPanel : public PanelInterface {
 
   LogFilter& filter_;
 };
-typedef std::shared_ptr<FilterPanel> FilterPanelPtr;
+using FilterPanelPtr = std::shared_ptr<FilterPanel>;
 
 }  // namespace log_view

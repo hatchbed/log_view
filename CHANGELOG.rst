@@ -4,13 +4,29 @@ Changelog for package log_view
 
 Forthcoming
 -----------
+* Fix navigation in node selection panel when the panel has no scroll bar.
+* Fix restoring selected whitelist nodes after clearing logs.
+
+0.4.0 (2026-05-22)
+------------------
+* Added subscription to /clock to display sim time on status bar.
+* Updated stamp format selection to preview the stamp format change.
+* Improved formatting of nodes, preferences, and details panels.
+* Improved search navigation.
+* Fixed exit to only require a single ctrl-c press.
+* Fixed message counts for nodes when loading messages from previous sessions.
+
+0.3.3 (2026-05-20)
+------------------
 * Added support for UTF8 glyphs in log messages.
 * Added support for ANSI color codes in log messages.
 * Fixed display for terminals limited to 8 colors.
 * Fixed session boundaries to not be treated as normal log entries.
 * Fixed details panel to scroll vertically when insufficient space is available.
 * Fixed help panel to scroll vertically when insufficient space is available.
+* Fixed preference panel to scroll vertically when insufficient space is available.
 * Updated node panel scrolling to make it consistent with other panels.
+* Improved selection controls.
 
 0.3.2 (2026-05-04)
 ------------------

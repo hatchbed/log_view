@@ -32,44 +32,30 @@
 
 namespace log_view {
 
-LogFilter::LogFilter(LogStorePtr& logs) :
+LogFilter::LogFilter(const LogStorePtr& logs) :
   logs_(logs)
 {}
 
-void LogFilter::setFilter(const std::string& filter) {
-  filter_string_ = filter;
-  auto filter_list = split(filter, ';');
-  bool changed = filter_list.size() != filter_list_.size();
-
-  for (size_t i = 0; i < filter_list_.size() && !changed; i++) {
-    if (filter_list_[i] != filter_list[i]) {
-      changed = true;
-    }
-  }
-
-  filter_list_ = filter_list;
-
+void LogFilter::updatePatternList(
+    const std::string& raw,
+    std::string& stored_string,
+    std::vector<std::string>& stored_list)
+{
+  auto new_list = split(raw, ';');
+  bool changed = new_list != stored_list;
+  stored_string = raw;
+  stored_list = std::move(new_list);
   if (changed) {
     reset();
   }
 }
 
+void LogFilter::setFilter(const std::string& filter) {
+  updatePatternList(filter, filter_string_, filter_list_);
+}
+
 void LogFilter::setExclude(const std::string& exclude) {
-  exclude_string_ = exclude;
-  auto exclude_list = split(exclude, ';');
-  bool changed = exclude_list.size() != exclude_list_.size();
-
-  for (size_t i = 0; i < exclude_list_.size() && !changed; i++) {
-    if (exclude_list_[i] != exclude_list[i]) {
-      changed = true;
-    }
-  }
-
-  exclude_list_ = exclude_list;
-
-  if (changed) {
-    reset();
-  }
+  updatePatternList(exclude, exclude_string_, exclude_list_);
 }
 
 void LogFilter::setDebugLevel(bool enable) {
@@ -159,15 +145,26 @@ void LogFilter::invertNodes() {
   reset();
 }
 
-void LogFilter::setPendingNodeSelected(const std::set<std::string>& whitelist) {
-  pending_node_selected_ = whitelist;
+void LogFilter::setNodeWhitelist(const std::set<std::string>& whitelist) {
+  for (const auto& name : whitelist) {
+    if (!nodes_.count(name)) {
+      nodes_[name] = {true, 0};
+      selected_node_count_++;
+    }
+  }
 }
 
 
 void LogFilter::clearLogs() {
+  for (auto it = nodes_.begin(); it != nodes_.end(); ) {
+    if (it->second.selected) {
+      it->second.count = 0;
+      ++it;
+    } else {
+      it = nodes_.erase(it);
+    }
+  }
   logs_->clear();
-  nodes_.clear();
-  selected_node_count_ = 0;
   clearSearch();
   log_indices_.clear();
   cursor_ = -1;
@@ -245,7 +242,8 @@ void LogFilter::idleProcess() {
   }
 
   if (search_cursor_ == -1 && !search_.empty() && !log_indices_.empty()) {
-    if ((search_direction_ == SEARCH_BOTH || search_direction_ == SEARCH_FWD) &&
+    if ((search_direction_ == SearchDirection::SEARCH_BOTH ||
+         search_direction_ == SearchDirection::SEARCH_FWD) &&
       search_cursor_fwd_ >= 0) {
       size_t max_idx = search_cursor_fwd_ + 1000;
       for (size_t i = search_cursor_fwd_; i < max_idx && i < log_indices_.size(); i++) {
@@ -260,7 +258,8 @@ void LogFilter::idleProcess() {
     }
 
     if (search_cursor_ == -1 &&
-      (search_direction_ == SEARCH_BOTH || search_direction_ == SEARCH_REV) &&
+      (search_direction_ == SearchDirection::SEARCH_BOTH ||
+       search_direction_ == SearchDirection::SEARCH_REV) &&
       search_cursor_rev_ >= 0) {
       int64_t min_idx = search_cursor_rev_ - 1000;
       for (int64_t i = search_cursor_rev_; i > min_idx && i >= 0; i--) {
@@ -290,11 +289,12 @@ const LogEntry& LogFilter::getEntry(int64_t index) const {
   }
 
   auto& entry = log_indices_[index];
-  if (entry.index >= logs_->logs().size()) {
+  auto& all_logs = logs_->logs();
+  if (entry.index >= all_logs.size()) {
     return dummy_entry_;
   }
 
-  return logs_->logs()[entry.index];
+  return all_logs[entry.index];
 }
 
 void LogFilter::clearSelect() {
@@ -322,7 +322,7 @@ int64_t LogFilter::getSelectEnd() const {
 void LogFilter::search(const std::string& pattern) {
   search_ = pattern;
 
-  search_direction_ = SEARCH_BOTH;
+  search_direction_ = SearchDirection::SEARCH_BOTH;
   search_cursor_ = -1;
 
   int64_t cursor = cursor_;
@@ -336,7 +336,7 @@ void LogFilter::search(const std::string& pattern) {
 }
 
 void LogFilter::nextMatch() {
-  search_direction_ = SEARCH_FWD;
+  search_direction_ = SearchDirection::SEARCH_FWD;
   search_cursor_ = -1;
 
   int64_t cursor = cursor_;
@@ -349,7 +349,7 @@ void LogFilter::nextMatch() {
 }
 
 void LogFilter::prevMatch() {
-  search_direction_ = SEARCH_REV;
+  search_direction_ = SearchDirection::SEARCH_REV;
   search_cursor_ = -1;
 
   int64_t cursor = cursor_;
@@ -451,12 +451,7 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
 
   auto node = nodes_.find(entry.node);
   if (node == nodes_.end()) {
-    bool selected = pending_node_selected_.count(entry.node) > 0;
-    nodes_[entry.node].selected = selected;
-    nodes_[entry.node].count = 1;
-    if (selected) {
-      selected_node_count_++;
-    }
+    nodes_[entry.node] = {false, 1};
   } else if (new_entry) {
     node->second.count++;
   }

@@ -44,7 +44,7 @@ namespace log_view {
 
 class LogFilter {
 public:
-  explicit LogFilter(LogStorePtr& logs);
+  explicit LogFilter(const LogStorePtr& logs);
 
   void setCursorOffset(int64_t offset) { cursor_offset_ = offset; }
 
@@ -62,7 +62,7 @@ public:
   void toggleNode(const std::string& node);
   void selectAllNodes();
   void invertNodes();
-  void setPendingNodeSelected(const std::set<std::string>& whitelist);
+  void setNodeWhitelist(const std::set<std::string>& whitelist);
 
   bool getDebugLevel() const { return debug_level_; }
   bool getInfoLevel() const { return info_level_; }
@@ -101,15 +101,14 @@ public:
   const std::map<std::string, NodeData>& nodes() const { return nodes_; }
   size_t filteredCount() const;
 
-
-  int64_t search_cursor_ = -1;
-  int64_t search_cursor_fwd_ = -1;
-  int64_t search_cursor_rev_ = -1;
-
 private:
   bool accepted(const LogEntry& entry, bool new_entry = false);
   void cleanSessionBoundaries();
   void removeAtIndex(size_t pos);
+  void updatePatternList(
+      const std::string& raw,
+      std::string& stored_string,
+      std::vector<std::string>& stored_list);
 
   LogStorePtr logs_;
   LogEntry dummy_entry_;
@@ -124,9 +123,12 @@ private:
 
   int64_t cursor_offset_ = 0;
 
-  enum SearchDirection { SEARCH_BOTH, SEARCH_FWD, SEARCH_REV };
+  enum class SearchDirection { SEARCH_BOTH, SEARCH_FWD, SEARCH_REV };
   std::string search_;
-  int search_direction_ = SEARCH_BOTH;
+  SearchDirection search_direction_ = SearchDirection::SEARCH_BOTH;
+  int64_t search_cursor_ = -1;
+  int64_t search_cursor_fwd_ = -1;
+  int64_t search_cursor_rev_ = -1;
 
   bool debug_level_ = true;
   bool info_level_ = true;
@@ -140,13 +142,12 @@ private:
   std::string exclude_string_;
 
   size_t selected_node_count_ = 0;
-  std::set<std::string> pending_node_selected_;
 
   std::vector<std::string> filter_list_;
   std::vector<std::string> exclude_list_;
 
   std::map<std::string, NodeData> nodes_;
 };
-typedef std::shared_ptr<LogFilter> LogFilterPtr;
+using LogFilterPtr = std::shared_ptr<LogFilter>;
 
 }  // namespace log_view

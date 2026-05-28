@@ -99,13 +99,110 @@ bool LogPanel::handleKey(int key) {
     return false;
   }
 
-  if (key == ctrl('a')) {
-      selectAll();
+  if (key == 27 && filter_.getSelectStart() >= 0) {
+    filter_.clearSelect();
+    forceRefresh();
+    return true;
+  }
 
-      return true;
+  if (key == ctrl('a')) {
+    selectAll();
+    return true;
+  }
+
+  if (key == KEY_SR || key == KEY_SF || key == KEY_SPREVIOUS ||
+      key == KEY_SNEXT || key == KEY_SHOME || key == KEY_SEND) {
+    extendSelect(key);
+    return true;
   }
 
   return false;
+}
+
+void LogPanel::extendSelect(int key) {
+  if (getContentSize() == 0) {
+    return;
+  }
+
+  int64_t max_idx = static_cast<int64_t>(getContentSize()) - 1;
+
+  int64_t cursor = filter_.getCursor();
+  if (cursor < 0 || cursor > static_cast<int64_t>(getContentSize())) {
+    cursor = static_cast<int64_t>(getContentSize());
+  }
+  int64_t view_height = static_cast<int64_t>(getContentHeight());
+  int64_t view_top = std::max(static_cast<int64_t>(0), cursor - view_height);
+  int64_t view_bottom = std::min(cursor - 1, max_idx);
+
+  if (filter_.getSelectStart() < 0) {
+    filter_.setSelectStart(view_bottom);
+    filter_.setSelectEnd(view_bottom);
+  }
+
+  int64_t end = filter_.getSelectEnd();
+  bool visible = (end >= view_top && end <= view_bottom);
+
+  if (!visible) {
+    follow(false);
+    if (end < view_top) {
+      filter_.setCursor(
+        std::min(end + view_height, static_cast<int64_t>(getContentSize())));
+    } else {
+      moveTo(static_cast<size_t>(end) + 1);
+    }
+    forceRefresh();
+    return;
+  }
+
+  if (key == KEY_SR) {
+    end = std::max(static_cast<int64_t>(0), end - 1);
+  } else if (key == KEY_SF) {
+    end = std::min(max_idx, end + 1);
+  } else if (key == KEY_SPREVIOUS) {
+    if (end == view_top) {
+      pageUp();
+      cursor = filter_.getCursor();
+      if (cursor < 0 || cursor > static_cast<int64_t>(getContentSize())) {
+        cursor = static_cast<int64_t>(getContentSize());
+      }
+      view_top = std::max(static_cast<int64_t>(0), cursor - view_height);
+    }
+    end = view_top;
+  } else if (key == KEY_SNEXT) {
+    if (end == view_bottom) {
+      pageDown();
+      cursor = filter_.getCursor();
+      if (cursor < 0 || cursor > static_cast<int64_t>(getContentSize())) {
+        cursor = static_cast<int64_t>(getContentSize());
+      }
+      view_bottom = std::min(cursor - 1, max_idx);
+    }
+    end = view_bottom;
+  } else if (key == KEY_SHOME) {
+    end = 0;
+  } else if (key == KEY_SEND) {
+    end = max_idx;
+  }
+
+  filter_.setSelectEnd(end);
+
+  cursor = filter_.getCursor();
+  if (cursor < 0 || cursor > static_cast<int64_t>(getContentSize())) {
+    cursor = static_cast<int64_t>(getContentSize());
+  }
+  int64_t new_view_top = std::max(static_cast<int64_t>(0), cursor - view_height);
+  int64_t new_view_bottom = std::min(cursor - 1, max_idx);
+
+  if (end < new_view_top) {
+    follow(false);
+    filter_.setCursor(
+      std::min(end + view_height, static_cast<int64_t>(getContentSize())));
+  } else if (end > new_view_bottom) {
+    moveTo(static_cast<size_t>(end) + 1);
+  }
+
+  copyToClipboard();
+  forceRefresh();
 }
 
 
@@ -116,7 +213,11 @@ bool LogPanel::handleMouse(const MEVENT& event) {
 
   if (event.bstate & BUTTON1_PRESSED) {
     mouse_down_ = true;
-    startSelect(event.y - y_);
+    if ((event.bstate & BUTTON_CTRL) && filter_.getSelectStart() >= 0) {
+      endSelect(event.y - y_);
+    } else {
+      startSelect(event.y - y_);
+    }
     forceRefresh();
     return true;
   } else if (mouse_down_ && (event.bstate & REPORT_MOUSE_POSITION)) {
@@ -192,6 +293,9 @@ void LogPanel::endSelect(int row) {
 }
 
 int LogPanel::getContentWidth() const {
+  if (right_edge_ > 0) {
+    return right_edge_;
+  }
   int width = width_;
   if (getContentSize() >= getContentHeight()) {
     width--;
@@ -230,21 +334,7 @@ std::string LogPanel::getPrefix(const LogEntry& entry, size_t line) const {
       timestamp = toString(entry.stamp.seconds(), 4);
       break;
   }
-  std::string text = timestamp + " [";
-  if (entry.level == rcl_interfaces::msg::Log::DEBUG) {
-    text += "DEBUG";
-  } else if (entry.level == rcl_interfaces::msg::Log::INFO) {
-    text += "INFO";
-  } else if (entry.level == rcl_interfaces::msg::Log::WARN) {
-    text += "WARN";
-  } else if (entry.level == rcl_interfaces::msg::Log::ERROR) {
-    text += "ERROR";
-  } else if (entry.level == rcl_interfaces::msg::Log::FATAL) {
-    text += "FATAL";
-  } else {
-    text += std::to_string(entry.level);
-  }
-  text += "] ";
+  std::string text = timestamp + " [" + levelName(entry.level) + "] ";
   if (line > 0) {
     text = std::string(text.size(), ' ');
   }
@@ -263,9 +353,7 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
     if (static_cast<int>(text.size()) > w) {
       text.resize(w);
     }
-    wattron(window_, kAttrGrey);
-    mvwprintw(window_, row, 0, "%s", text.c_str());
-    wattroff(window_, kAttrGrey);
+    printStyledAt(window_, row, 0, kAttrGrey, "%s", text.c_str());
     return;
   }
 
@@ -278,21 +366,16 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
     selected = idx >= start && idx <= end;
   }
 
-  if (selected) {
-    wattron(window_, A_REVERSE);
-  }
-
+  attr_t level_attr = selected ? A_REVERSE : 0;
   if (entry.level == rcl_interfaces::msg::Log::DEBUG) {
-    wattron(window_, A_DIM);
+    level_attr |= A_DIM;
   } else if (entry.level == rcl_interfaces::msg::Log::ERROR) {
-    wattron(window_, COLOR_PAIR(CP_RED));
+    level_attr |= COLOR_PAIR(CP_RED);
   } else if (entry.level == rcl_interfaces::msg::Log::FATAL) {
-    wattron(window_, A_BOLD);
-    wattron(window_, COLOR_PAIR(CP_RED));
+    level_attr |= A_BOLD | COLOR_PAIR(CP_RED);
   } else if (entry.level == rcl_interfaces::msg::Log::WARN) {
-    wattron(window_, COLOR_PAIR(CP_YELLOW));
+    level_attr |= COLOR_PAIR(CP_YELLOW);
   }
-
   std::string prefix = getPrefix(entry, line);
   const std::string& raw_line = entry.text[line];
   std::string stripped_line = raw_line.find('\033') != std::string::npos
@@ -314,14 +397,10 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
   }
   text = utf8TruncateDisplayCols(text, static_cast<size_t>(width_));
 
-  mvwprintw(window_, row, 0, "%s", text.c_str());
+  printStyledAt(window_, row, 0, level_attr, "%s", text.c_str());
 
   // ANSI color/bold overlay pass
   if (raw_line.find('\033') != std::string::npos) {
-    static const int kAnsiPairs[] = {
-      CP_ANSI_BLACK, CP_ANSI_RED,  CP_ANSI_GREEN,   CP_ANSI_YELLOW,
-      CP_ANSI_BLUE,  CP_ANSI_MAGENTA, CP_ANSI_CYAN, CP_ANSI_WHITE
-    };
     size_t vis_col = prefix.length();  // visible column of current segment start
     for (const auto& seg : parseAnsiSegments(raw_line)) {
       size_t seg_end = vis_col + seg.text.size();
@@ -335,14 +414,12 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
           int64_t clip_end   = std::min(static_cast<int64_t>(width_), scr_end);
           size_t  txt_offset = static_cast<size_t>(clip_start - scr_start);
           size_t  txt_len    = static_cast<size_t>(clip_end - clip_start);
-          if (has_color) { wattron(window_, COLOR_PAIR(kAnsiPairs[seg.ansi_fg])); }
-          if (seg.bold)  { wattron(window_, A_BOLD); }
-          if (seg.dim)   { wattron(window_, A_DIM);  }
-          mvwprintw(window_, row, static_cast<int>(clip_start),
+          attr_t attr = selected ? A_REVERSE : 0;
+          if (has_color) attr |= COLOR_PAIR(kAnsiPairs[seg.ansi_fg]);
+          if (seg.bold)  attr |= A_BOLD;
+          if (seg.dim)   attr |= A_DIM;
+          printStyledAt(window_, row, static_cast<int>(clip_start), attr,
             "%.*s", static_cast<int>(txt_len), seg.text.c_str() + txt_offset);
-          if (seg.dim)   { wattroff(window_, A_DIM);  }
-          if (seg.bold)  { wattroff(window_, A_BOLD); }
-          if (has_color) { wattroff(window_, COLOR_PAIR(kAnsiPairs[seg.ansi_fg])); }
         }
       }
       vis_col = seg_end;
@@ -350,42 +427,45 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
   }
 
   if (matched) {
-    wattron(window_, COLOR_PAIR(CP_DEFAULT_CYAN));
+    bool off_left = false;
+    bool off_right = false;
+    int64_t visible_width = static_cast<int64_t>(getContentWidth());
+    for (const auto& match_index : match_indices) {
+      int64_t scr_start = static_cast<int64_t>(match_index + prefix.length())
+                          - static_cast<int64_t>(shift_);
+      int64_t scr_end   = scr_start + static_cast<int64_t>(match_size);
 
-    if (text.empty()) {
-      mvwprintw(window_, row, 0, " ");
-    } else {
-      for (const auto& match_index : match_indices) {
-        int64_t start_idx = match_index + prefix.length() - shift_;
-        int64_t end_idx = start_idx + match_size;
-
-        start_idx = std::min(
-          static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), start_idx));
-        end_idx = std::min(
-          static_cast<int64_t>(text.size()) - 2, std::max(static_cast<int64_t>(0), end_idx));
-
-        int64_t substr_len = std::max(static_cast<int64_t>(1), end_idx - start_idx);
-
-        mvwprintw(window_, row, start_idx, "%s", text.substr(start_idx, substr_len).c_str());
+      if (scr_start >= visible_width) {
+        off_right = true;
+        continue;
       }
+      if (scr_end <= 0) {
+        off_left = true;
+        continue;
+      }
+
+      int64_t clip_start = std::max(static_cast<int64_t>(0), scr_start);
+      int64_t clip_end   = std::min({scr_end, visible_width,
+                                     static_cast<int64_t>(text.size())});
+
+      if (clip_end <= clip_start) {
+        continue;
+      }
+
+      printStyledAt(window_, row, static_cast<int>(clip_start),
+        (selected ? A_REVERSE : 0) | COLOR_PAIR(CP_DEFAULT_CYAN),
+        "%.*s", static_cast<int>(clip_end - clip_start),
+        text.c_str() + clip_start);
     }
-    wattroff(window_, COLOR_PAIR(CP_DEFAULT_CYAN));
-  }
 
-  if (entry.level == rcl_interfaces::msg::Log::DEBUG) {
-    wattroff(window_, A_DIM);
-  } else if (entry.level == rcl_interfaces::msg::Log::ERROR) {
-    wattroff(window_, COLOR_PAIR(CP_RED));
-  }
-  if (entry.level == rcl_interfaces::msg::Log::FATAL) {
-    wattroff(window_, COLOR_PAIR(CP_RED));
-    wattroff(window_, A_BOLD);
-  } else if (entry.level == rcl_interfaces::msg::Log::WARN) {
-    wattroff(window_, COLOR_PAIR(CP_YELLOW));
-  }
-
-  if (selected) {
-    wattroff(window_, A_REVERSE);
+    if (off_right) {
+      int col = (right_edge_ > 0) ? right_edge_ - 1
+                                   : width_ - 1 - (scrollbar() ? 1 : 0);
+      printStyledAt(window_, row, col, COLOR_PAIR(CP_WHITE_CYAN), ">");
+    }
+    if (off_left) {
+      printStyledAt(window_, row, 0, COLOR_PAIR(CP_WHITE_CYAN), "<");
+    }
   }
 }
 
