@@ -4,6 +4,8 @@ Changelog for package log_view
 
 Forthcoming
 -----------
+* Add loading logs from one or more bag files.
+* Add bag source panel to toggle per bag filtering.
 * Fix navigation in node selection panel when the panel has no scroll bar.
 * Fix restoring selected whitelist nodes after clearing logs.
 
