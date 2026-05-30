@@ -39,23 +39,31 @@ LogFilter::LogFilter(const LogStorePtr& logs) :
 void LogFilter::updatePatternList(
     const std::string& raw,
     std::string& stored_string,
-    std::vector<std::string>& stored_list)
+    std::vector<Pattern>& stored_patterns)
 {
-  auto new_list = split(raw, ';');
-  bool changed = new_list != stored_list;
+  auto tokens = split(raw, ';');
+  bool changed = (tokens.size() != stored_patterns.size());
+  if (!changed) {
+    for (size_t i = 0; i < tokens.size(); i++) {
+      if (tokens[i] != stored_patterns[i].raw) { changed = true; break; }
+    }
+  }
   stored_string = raw;
-  stored_list = std::move(new_list);
+  stored_patterns.clear();
+  for (const auto& token : tokens) {
+    stored_patterns.push_back(Pattern::compile(token));
+  }
   if (changed) {
     reset();
   }
 }
 
 void LogFilter::setFilter(const std::string& filter) {
-  updatePatternList(filter, filter_string_, filter_list_);
+  updatePatternList(filter, filter_string_, filter_patterns_);
 }
 
 void LogFilter::setExclude(const std::string& exclude) {
-  updatePatternList(exclude, exclude_string_, exclude_list_);
+  updatePatternList(exclude, exclude_string_, exclude_patterns_);
 }
 
 void LogFilter::setDebugLevel(bool enable) {
@@ -223,6 +231,13 @@ void LogFilter::reset() {
   if (earliest_log_index_ > 0) {
     earliest_log_index_--;
   }
+  search_cursor_       = -1;
+  search_cursor_fwd_   = 0;
+  search_cursor_rev_   = -1;
+  search_cursor_saved_ = -1;
+  if (!search_pattern_.empty()) {
+    search_direction_ = SearchDirection::SEARCH_BOTH;
+  }
 }
 
 void LogFilter::update() {
@@ -282,15 +297,14 @@ void LogFilter::idleProcess() {
     cleanSessionBoundaries();
   }
 
-  if (search_cursor_ == -1 && !search_.empty() && !log_indices_.empty()) {
-    if ((search_direction_ == SearchDirection::SEARCH_BOTH ||
-         search_direction_ == SearchDirection::SEARCH_FWD) &&
-      search_cursor_fwd_ >= 0) {
+  if (search_cursor_ == -1 && search_direction_ == SearchDirection::SEARCH_BOTH &&
+      !search_pattern_.empty() && !log_indices_.empty()) {
+    if (search_cursor_fwd_ >= 0) {
       size_t max_idx = search_cursor_fwd_ + 1000;
       for (size_t i = search_cursor_fwd_; i < max_idx && i < log_indices_.size(); i++) {
         auto& index = log_indices_[i];
         search_cursor_fwd_ = i + 1;
-        if (contains(logs[index.index].text[index.line], search_, true)) {
+        if (search_pattern_.matches(logs[index.index].text[index.line])) {
           search_cursor_ = i;
           cursor_ = i + cursor_offset_;
           break;
@@ -298,22 +312,78 @@ void LogFilter::idleProcess() {
       }
     }
 
-    if (search_cursor_ == -1 &&
-      (search_direction_ == SearchDirection::SEARCH_BOTH ||
-       search_direction_ == SearchDirection::SEARCH_REV) &&
-      search_cursor_rev_ >= 0) {
+    if (search_cursor_ == -1 && search_cursor_rev_ >= 0) {
       int64_t min_idx = search_cursor_rev_ - 1000;
       for (int64_t i = search_cursor_rev_; i > min_idx && i >= 0; i--) {
         auto& index = log_indices_[i];
         search_cursor_rev_ = std::max(static_cast<int64_t>(0), i - 1);
-        if (contains(logs[index.index].text[index.line], search_, true)) {
+        if (search_pattern_.matches(logs[index.index].text[index.line])) {
           search_cursor_ = i;
-          cursor_ = i + 1;
+          cursor_ = i + cursor_offset_;
           break;
         }
       }
     }
   }
+}
+
+bool LogFilter::scanMatchForward(int64_t from_idx, bool minimal_scroll) {
+  if (from_idx < 0) from_idx = 0;
+  const auto& logs = logs_->logs();
+  for (int64_t i = from_idx; i < static_cast<int64_t>(log_indices_.size()); i++) {
+    const auto& ll = log_indices_[static_cast<size_t>(i)];
+    if (ll.index >= logs.size()) continue;
+    if (search_pattern_.matches(logs[ll.index].text[ll.line])) {
+      search_cursor_ = i;
+      if (minimal_scroll) {
+        if (i >= cursor_) {
+          cursor_ = i + 1;
+        } else if (i < cursor_ - cursor_offset_) {
+          cursor_ = i + cursor_offset_;
+        }
+      } else {
+        cursor_ = i + cursor_offset_;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+bool LogFilter::scanMatchBackward(int64_t from_idx, bool minimal_scroll) {
+  const auto& logs = logs_->logs();
+  for (int64_t i = from_idx; i >= 0; i--) {
+    const auto& ll = log_indices_[static_cast<size_t>(i)];
+    if (ll.index >= logs.size()) continue;
+    if (search_pattern_.matches(logs[ll.index].text[ll.line])) {
+      search_cursor_ = i;
+      if (minimal_scroll) {
+        if (i >= cursor_) {
+          cursor_ = i + 1;
+        } else if (i < cursor_ - cursor_offset_) {
+          cursor_ = i + cursor_offset_;
+        }
+      } else {
+        cursor_ = i + 1;
+      }
+      return true;
+    }
+  }
+  return false;
+}
+
+void LogFilter::nextMatchByMatch() {
+  if (search_pattern_.empty() || log_indices_.empty()) return;
+  int64_t start = (search_cursor_ >= 0) ? search_cursor_ + 1 : 0;
+  scanMatchForward(start, true);
+}
+
+void LogFilter::prevMatchByMatch() {
+  if (search_pattern_.empty() || log_indices_.empty()) return;
+  int64_t start = (search_cursor_ >= 0)
+                  ? search_cursor_ - 1
+                  : static_cast<int64_t>(log_indices_.size()) - 1;
+  scanMatchBackward(start, true);
 }
 
 void LogFilter::setCursor(int64_t index) {
@@ -361,7 +431,8 @@ int64_t LogFilter::getSelectEnd() const {
 }
 
 void LogFilter::search(const std::string& pattern) {
-  search_ = pattern;
+  search_cursor_saved_ = -1;
+  search_pattern_ = Pattern::compile(pattern);
 
   search_direction_ = SearchDirection::SEARCH_BOTH;
   search_cursor_ = -1;
@@ -377,33 +448,41 @@ void LogFilter::search(const std::string& pattern) {
 }
 
 void LogFilter::nextMatch() {
-  search_direction_ = SearchDirection::SEARCH_FWD;
-  search_cursor_ = -1;
-
-  int64_t cursor = cursor_;
-  if (cursor < 0) {
-    cursor = log_indices_.size();
-    cursor--;
+  if (search_pattern_.empty() || log_indices_.empty()) return;
+  int64_t cursor = (cursor_ >= 0) ? cursor_ : static_cast<int64_t>(log_indices_.size());
+  if (!scanMatchForward(cursor + 1, false)) {
+    if (search_cursor_ >= 0) {
+      search_cursor_saved_ = search_cursor_;
+      if (!scanMatchForward(search_cursor_saved_ + 1, true)) {
+        int64_t ii = search_cursor_;
+        if (ii >= cursor_ || ii < cursor_ - cursor_offset_) {
+          cursor_ = (ii >= cursor_) ? ii + 1 : ii + cursor_offset_;
+        }
+      }
+    }
   }
-
-  search_cursor_fwd_ = cursor + 1;
 }
 
 void LogFilter::prevMatch() {
-  search_direction_ = SearchDirection::SEARCH_REV;
-  search_cursor_ = -1;
-
-  int64_t cursor = cursor_;
-  if (cursor < 0) {
-    cursor = log_indices_.size();
-    cursor--;
+  if (search_pattern_.empty() || log_indices_.empty()) return;
+  int64_t cursor = (cursor_ >= 0) ? cursor_ : static_cast<int64_t>(log_indices_.size());
+  int64_t page_start = cursor - cursor_offset_ - 1;
+  if (!scanMatchBackward(page_start, false)) {
+    if (search_cursor_ >= 0) {
+      search_cursor_saved_ = search_cursor_;
+      if (!scanMatchBackward(search_cursor_saved_ - 1, true)) {
+        int64_t ii = search_cursor_;
+        if (ii >= cursor_ || ii < cursor_ - cursor_offset_) {
+          cursor_ = (ii >= cursor_) ? ii + 1 : ii + cursor_offset_;
+        }
+      }
+    }
   }
-
-  search_cursor_rev_ = std::max(static_cast<int64_t>(0), cursor - (cursor_offset_ + 1));
 }
 
 void LogFilter::clearSearch() {
-  search_.clear();
+  search_cursor_saved_ = -1;
+  search_pattern_ = Pattern::compile("");
   search_cursor_ = -1;
   search_cursor_fwd_ = -1;
   search_cursor_rev_ = -1;
@@ -488,7 +567,7 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
     return show_session_boundaries_;
   }
 
-  bool include = filter_list_.empty();
+  bool include = filter_patterns_.empty();
 
   auto node = nodes_.find(entry.node);
   if (node == nodes_.end()) {
@@ -535,9 +614,9 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
     return false;
   }
 
-  for (const auto& filter : filter_list_) {
+  for (const auto& filter : filter_patterns_) {
     for (const auto& line : entry.text) {
-      if (contains(line, filter, true)) {
+      if (filter.matches(line)) {
         include = true;
         break;
       }
@@ -545,9 +624,9 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
   }
 
   if (include) {
-    for (const auto& exclude : exclude_list_) {
+    for (const auto& exclude : exclude_patterns_) {
       for (const auto& line : entry.text) {
-        if (contains(line, exclude, true)) {
+        if (exclude.matches(line)) {
           include = false;
           break;
         }
@@ -558,6 +637,40 @@ bool LogFilter::accepted(const LogEntry& entry, bool new_entry) {
   return include;
 }
 
+
+LogFilter::SearchStats LogFilter::getSearchStats() const {
+  if (search_pattern_.empty()) {
+    stats_indices_size_ = 0;
+    stats_cursor_ = -2;
+    stats_position_ = 0;
+    stats_total_ = 0;
+    return {};
+  }
+  bool cursor_valid = (search_cursor_ >= 0);
+  bool need_recompute = (log_indices_.size() != stats_indices_size_) ||
+                        (cursor_valid && search_cursor_ != stats_cursor_);
+  if (!need_recompute) {
+    return {stats_position_, stats_total_};
+  }
+  stats_indices_size_ = log_indices_.size();
+  if (cursor_valid) {
+    stats_cursor_ = search_cursor_;
+    stats_position_ = 0;
+  }
+  stats_total_ = 0;
+  const auto& logs = logs_->logs();
+  for (size_t i = 0; i < log_indices_.size(); i++) {
+    const auto& ll = log_indices_[i];
+    if (ll.index >= logs.size()) continue;
+    if (search_pattern_.matches(logs[ll.index].text[ll.line])) {
+      stats_total_++;
+      if (cursor_valid && static_cast<int64_t>(i) == search_cursor_) {
+        stats_position_ = stats_total_;
+      }
+    }
+  }
+  return {stats_position_, stats_total_};
+}
 
 size_t LogFilter::filteredCount() const {
   const auto& logs = logs_->logs();

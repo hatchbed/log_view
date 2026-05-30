@@ -28,11 +28,13 @@
 
 #include <log_view/panels/exclude_panel.h>
 
+#include <log_view/utils.h>
+
 namespace log_view {
 
 void ExcludePanel::refresh() {
   printStyledAt(window_, 0, 0, focus() ? A_BOLD : 0, "exclude: ");
-  mvwprintw(window_, 0, inputOffset(), "%s", input_text_.c_str());
+  renderPatternInput(window_, 0, inputOffset(), input_text_);
 }
 
 void ExcludePanel::activate(bool enable) {

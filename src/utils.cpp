@@ -313,6 +313,73 @@ void printStyledAt(WINDOW* win, int y, int x, attr_t attr, const char* fmt, ...)
   if (attr) wattroff(win, attr);
 }
 
+int renderPatternInput(WINDOW* win, int row, int col, const std::string& text, attr_t base_attr) {
+  attr_t tmpl_attr  = base_attr ? COLOR_PAIR(CP_CYAN_GREY)           : COLOR_PAIR(CP_ANSI_CYAN);
+  attr_t regex_attr = base_attr ? COLOR_PAIR(CP_BRIGHT_MAGENTA_GREY) : COLOR_PAIR(CP_BRIGHT_MAGENTA);
+
+  size_t pos = 0;
+  while (pos <= text.size()) {
+    size_t seg_end = text.find(';', pos);
+    if (seg_end == std::string::npos) seg_end = text.size();
+
+    const char* seg_ptr = text.c_str() + pos;
+    int seg_len = static_cast<int>(seg_end - pos);
+
+    bool is_regex = seg_len > 0 && seg_ptr[0] == '/' &&
+                    text.rfind('/', seg_end - 1) > pos;
+    bool has_template = !is_regex &&
+                        text.find('{', pos) < seg_end;
+
+    if (is_regex) {
+      printStyledAt(win, row, col, regex_attr, "%.*s", seg_len, seg_ptr);
+      col += seg_len;
+      if (base_attr) wattron(win, base_attr);
+    } else if (has_template) {
+      size_t tpos = pos;
+      while (tpos < seg_end) {
+        size_t brace = text.find('{', tpos);
+        if (brace == std::string::npos || brace >= seg_end) {
+          int len = static_cast<int>(seg_end - tpos);
+          if (len > 0) { mvwprintw(win, row, col, "%.*s", len, text.c_str() + tpos); col += len; }
+          break;
+        }
+        if (brace > tpos) {
+          int len = static_cast<int>(brace - tpos);
+          mvwprintw(win, row, col, "%.*s", len, text.c_str() + tpos);
+          col += len;
+        }
+        size_t close = text.find('}', brace + 1);
+        if (close == std::string::npos || close >= seg_end) {
+          int len = static_cast<int>(seg_end - brace);
+          mvwprintw(win, row, col, "%.*s", len, text.c_str() + brace);
+          col += len;
+          break;
+        }
+        int len = static_cast<int>(close - brace + 1);
+        printStyledAt(win, row, col, tmpl_attr, "%.*s", len, text.c_str() + brace);
+        col += len;
+        if (base_attr) wattron(win, base_attr);
+        tpos = close + 1;
+      }
+    } else {
+      if (seg_len > 0) {
+        mvwprintw(win, row, col, "%.*s", seg_len, seg_ptr);
+        col += seg_len;
+      }
+    }
+
+    pos = seg_end;
+    if (pos < text.size()) {
+      mvwprintw(win, row, col, ";");
+      col++;
+      pos++;
+    } else {
+      break;
+    }
+  }
+  return col;
+}
+
 void toClipboard(const std::string& text) {
   FILE* pipe = popen("xclip -sel clip", "w");
   if (!pipe) {
@@ -320,6 +387,289 @@ void toClipboard(const std::string& text) {
   }
   fwrite(text.data(), sizeof(char), text.size(), pipe);
   pclose(pipe);
+}
+
+// ------ Pattern ------
+
+Pattern Pattern::compile(const std::string& raw) {
+  Pattern p;
+  p.raw = raw;
+  if (raw.empty()) {
+    return p;
+  }
+
+  if (raw[0] == '/') {
+    size_t close = raw.rfind('/');
+    if (close == 0) {
+      return p;  // no closing slash — treat as literal
+    }
+    p.type = Type::Regex;
+    std::string pat = raw.substr(1, close - 1);
+    std::string flag_str = raw.substr(close + 1);
+    auto flags = std::regex_constants::ECMAScript;
+    if (flag_str.find('i') != std::string::npos) {
+      flags |= std::regex_constants::icase;
+    }
+    try {
+      p.compiled_regex_ = std::regex(pat, flags);
+    } catch (const std::regex_error&) {
+      p.valid_ = false;
+    }
+    return p;
+  }
+
+  if (raw.find('{') != std::string::npos) {
+    p.type = Type::Template;
+    size_t pos = 0;
+    while (pos <= raw.size()) {
+      size_t brace = raw.find('{', pos);
+      if (brace == std::string::npos) {
+        p.fixed_parts_.push_back(raw.substr(pos));
+        break;
+      }
+      p.fixed_parts_.push_back(raw.substr(pos, brace - pos));
+      size_t end_brace = raw.find('}', brace + 1);
+      if (end_brace == std::string::npos) {
+        p.fixed_parts_.back() += raw.substr(brace);
+        break;
+      }
+      std::string content = raw.substr(brace + 1, end_brace - brace - 1);
+      p.placeholders_.push_back(parsePlaceholder(content));
+      pos = end_brace + 1;
+    }
+    if (p.placeholders_.empty()) {
+      p.type = Type::Literal;
+      p.fixed_parts_.clear();
+    }
+    return p;
+  }
+
+  return p;
+}
+
+Pattern::Placeholder Pattern::parsePlaceholder(const std::string& content) {
+  Placeholder ph;
+  if (content.empty() || content == "*") {
+    ph.kind = Placeholder::Kind::Wildcard;
+    return ph;
+  }
+  if (content.find('|') != std::string::npos) {
+    ph.kind = Placeholder::Kind::Alternation;
+    ph.choices = split(content, '|');
+    return ph;
+  }
+  ph.kind = Placeholder::Kind::Numeric;
+  try {
+    if (content.size() >= 2 && content[0] == '>' && content[1] == '=') {
+      ph.num_op  = Placeholder::NumOp::GEQ;
+      ph.num_val = std::stod(content.substr(2));
+    } else if (content.size() >= 2 && content[0] == '<' && content[1] == '=') {
+      ph.num_op  = Placeholder::NumOp::LEQ;
+      ph.num_val = std::stod(content.substr(2));
+    } else if (content[0] == '>') {
+      ph.num_op  = Placeholder::NumOp::GT;
+      ph.num_val = std::stod(content.substr(1));
+    } else if (content[0] == '<') {
+      ph.num_op  = Placeholder::NumOp::LT;
+      ph.num_val = std::stod(content.substr(1));
+    } else if (content[0] == '=') {
+      ph.num_op  = Placeholder::NumOp::EQ;
+      ph.num_val = std::stod(content.substr(1));
+    } else {
+      size_t range = content.find("..");
+      if (range != std::string::npos) {
+        ph.num_op   = Placeholder::NumOp::RANGE;
+        ph.num_val  = std::stod(content.substr(0, range));
+        ph.num_val2 = std::stod(content.substr(range + 2));
+      } else {
+        ph.num_op  = Placeholder::NumOp::EQ;
+        ph.num_val = std::stod(content);
+      }
+    }
+  } catch (...) {
+    ph.kind    = Placeholder::Kind::Alternation;
+    ph.choices = {content};
+  }
+  return ph;
+}
+
+bool Pattern::matches(const std::string& text) const {
+  if (raw.empty()) return true;
+  switch (type) {
+    case Type::Literal:
+      return contains(text, raw, true);
+    case Type::Regex:
+      return valid_ && std::regex_search(text, compiled_regex_);
+    case Type::Template: {
+      if (placeholders_.empty()) {
+        return fixed_parts_.empty() || contains(text, fixed_parts_[0], true);
+      }
+      const std::string& anchor = fixed_parts_[0];
+      if (!anchor.empty()) {
+        size_t search_pos = 0;
+        while (search_pos < text.size()) {
+          auto it = std::search(
+            text.begin() + static_cast<ptrdiff_t>(search_pos), text.end(),
+            anchor.begin(), anchor.end(),
+            [](char a, char b) { return std::toupper(a) == std::toupper(b); });
+          if (it == text.end()) return false;
+          size_t occ = static_cast<size_t>(it - text.begin());
+          if (matchTemplate(text, occ)) return true;
+          search_pos = occ + 1;
+        }
+        return false;
+      }
+      for (size_t i = 0; i < text.size(); i++) {
+        if (matchTemplate(text, i)) return true;
+      }
+      return false;
+    }
+  }
+  return false;
+}
+
+size_t Pattern::matchTemplateEnd(const std::string& text, size_t pos) const {
+  static constexpr size_t kNone = std::string::npos;
+  for (size_t i = 0; i < placeholders_.size(); i++) {
+    const std::string& fixed = fixed_parts_[i];
+    if (!fixed.empty()) {
+      if (pos + fixed.size() > text.size()) return kNone;
+      auto it = std::search(
+        text.begin() + static_cast<ptrdiff_t>(pos),
+        text.begin() + static_cast<ptrdiff_t>(pos + fixed.size()),
+        fixed.begin(), fixed.end(),
+        [](char a, char b) { return std::toupper(a) == std::toupper(b); });
+      if (it != text.begin() + static_cast<ptrdiff_t>(pos)) return kNone;
+      pos += fixed.size();
+    }
+    if (pos > text.size()) return kNone;
+
+    const Placeholder& ph = placeholders_[i];
+    if (ph.kind == Placeholder::Kind::Wildcard) {
+      while (pos < text.size() && !std::isspace(static_cast<unsigned char>(text[pos]))) {
+        pos++;
+      }
+    } else if (ph.kind == Placeholder::Kind::Numeric) {
+      while (pos < text.size() && std::isspace(static_cast<unsigned char>(text[pos]))) {
+        pos++;
+      }
+      const char* start_ptr = text.c_str() + pos;
+      char* end_ptr = nullptr;
+      double val = std::strtod(start_ptr, &end_ptr);
+      if (!end_ptr || end_ptr == start_ptr) return kNone;
+      pos = static_cast<size_t>(end_ptr - text.c_str());
+      bool ok = false;
+      switch (ph.num_op) {
+        case Placeholder::NumOp::GT:    ok = val > ph.num_val; break;
+        case Placeholder::NumOp::LT:    ok = val < ph.num_val; break;
+        case Placeholder::NumOp::GEQ:   ok = val >= ph.num_val; break;
+        case Placeholder::NumOp::LEQ:   ok = val <= ph.num_val; break;
+        case Placeholder::NumOp::EQ:    ok = (val == ph.num_val); break;
+        case Placeholder::NumOp::RANGE: ok = (val >= ph.num_val && val <= ph.num_val2); break;
+      }
+      if (!ok) return kNone;
+    } else {
+      bool found = false;
+      for (const auto& choice : ph.choices) {
+        if (pos + choice.size() > text.size()) continue;
+        auto it = std::search(
+          text.begin() + static_cast<ptrdiff_t>(pos),
+          text.begin() + static_cast<ptrdiff_t>(pos + choice.size()),
+          choice.begin(), choice.end(),
+          [](char a, char b) { return std::toupper(a) == std::toupper(b); });
+        if (it != text.begin() + static_cast<ptrdiff_t>(pos)) continue;
+        pos += choice.size();
+        found = true;
+        break;
+      }
+      if (!found) return kNone;
+    }
+  }
+
+  const std::string& trailing = fixed_parts_.back();
+  if (!trailing.empty()) {
+    if (pos + trailing.size() > text.size()) return kNone;
+    auto it = std::search(
+      text.begin() + static_cast<ptrdiff_t>(pos),
+      text.begin() + static_cast<ptrdiff_t>(pos + trailing.size()),
+      trailing.begin(), trailing.end(),
+      [](char a, char b) { return std::toupper(a) == std::toupper(b); });
+    if (it != text.begin() + static_cast<ptrdiff_t>(pos)) return kNone;
+    pos += trailing.size();
+  }
+  return pos;
+}
+
+bool Pattern::matchTemplate(const std::string& text, size_t pos) const {
+  return matchTemplateEnd(text, pos) != std::string::npos;
+}
+
+std::vector<std::pair<size_t, size_t>> Pattern::findAll(const std::string& text) const {
+  std::vector<std::pair<size_t, size_t>> results;
+  if (raw.empty()) return results;
+
+  switch (type) {
+    case Type::Literal: {
+      for (size_t pos : find(text, raw, true)) {
+        results.push_back({pos, raw.size()});
+      }
+      break;
+    }
+    case Type::Regex: {
+      if (!valid_) break;
+      try {
+        std::sregex_iterator it(text.begin(), text.end(), compiled_regex_);
+        std::sregex_iterator end_it;
+        for (; it != end_it; ++it) {
+          size_t len = static_cast<size_t>(it->length());
+          if (len == 0) continue;
+          results.push_back({static_cast<size_t>(it->position()), len});
+        }
+      } catch (...) {}
+      break;
+    }
+    case Type::Template: {
+      if (placeholders_.empty()) {
+        if (!fixed_parts_.empty() && !fixed_parts_[0].empty()) {
+          for (size_t pos : find(text, fixed_parts_[0], true)) {
+            results.push_back({pos, fixed_parts_[0].size()});
+          }
+        }
+        break;
+      }
+      const std::string& anchor = fixed_parts_[0];
+      if (!anchor.empty()) {
+        size_t sp = 0;
+        while (sp < text.size()) {
+          auto it = std::search(
+            text.begin() + static_cast<ptrdiff_t>(sp), text.end(),
+            anchor.begin(), anchor.end(),
+            [](char a, char b) { return std::toupper(a) == std::toupper(b); });
+          if (it == text.end()) break;
+          size_t occ = static_cast<size_t>(it - text.begin());
+          size_t end = matchTemplateEnd(text, occ);
+          if (end != std::string::npos) {
+            results.push_back({occ, end - occ});
+            sp = (end > occ) ? end : occ + 1;
+          } else {
+            sp = occ + 1;
+          }
+        }
+      } else {
+        for (size_t i = 0; i < text.size(); ) {
+          size_t end = matchTemplateEnd(text, i);
+          if (end != std::string::npos && end > i) {
+            results.push_back({i, end - i});
+            i = end;
+          } else {
+            i++;
+          }
+        }
+      }
+      break;
+    }
+  }
+  return results;
 }
 
 }  // namespace log_view

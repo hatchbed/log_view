@@ -28,6 +28,7 @@
 
 #include <log_view/panels/log_panel.h>
 
+#include <chrono>
 #include <ctime>
 
 #include <log_view/utils.h>
@@ -40,6 +41,29 @@ void LogPanel::forceRefresh() {
 }
 
 void LogPanel::refresh() {
+  if (!filter_.getSearchPattern().empty()) {
+    int64_t cur_sc = filter_.getSearchCursor();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now().time_since_epoch()).count();
+
+    if (cur_sc != last_search_cursor_) {
+      blink_phase_start_ms_ = ms;
+      blink_phase_ = true;
+      werase(window_);
+      cleared_ = true;
+      last_search_cursor_ = cur_sc;
+    } else {
+      bool new_phase = ((ms - blink_phase_start_ms_) / 600) % 2 == 0;
+      if (new_phase != blink_phase_) {
+        blink_phase_ = new_phase;
+        if (cur_sc >= 0) {
+          werase(window_);
+          cleared_ = true;
+        }
+      }
+    }
+  }
+
   int64_t cursor = getCursor();
 
   bool new_logs = last_content_size_ != getContentSize();
@@ -383,13 +407,14 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
   std::string text = prefix + stripped_line;
   max_length_ = std::max(max_length_, utf8DisplayWidth(text));
 
-  std::string match = filter_.getSearch();
-  size_t match_size = match.size();
-  std::vector<size_t> match_indices;
+  const Pattern& search_pat = filter_.getSearchPattern();
+  std::vector<std::pair<size_t, size_t>> match_ranges;
   bool matched = false;
-  if (!match.empty()) {
-    match_indices = find(stripped_line, match, true);
-    matched = !match_indices.empty();
+  bool is_search_cursor = (filter_.getSearchCursor() >= 0 &&
+                           static_cast<int64_t>(idx) == filter_.getSearchCursor());
+  if (!search_pat.empty()) {
+    match_ranges = search_pat.findAll(stripped_line);
+    matched = !match_ranges.empty();
   }
 
   if (shift_ > 0) {
@@ -430,10 +455,10 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
     bool off_left = false;
     bool off_right = false;
     int64_t visible_width = static_cast<int64_t>(getContentWidth());
-    for (const auto& match_index : match_indices) {
-      int64_t scr_start = static_cast<int64_t>(match_index + prefix.length())
+    for (const auto& mr : match_ranges) {
+      int64_t scr_start = static_cast<int64_t>(mr.first + prefix.length())
                           - static_cast<int64_t>(shift_);
-      int64_t scr_end   = scr_start + static_cast<int64_t>(match_size);
+      int64_t scr_end   = scr_start + static_cast<int64_t>(mr.second);
 
       if (scr_start >= visible_width) {
         off_right = true;
@@ -452,8 +477,9 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
         continue;
       }
 
-      printStyledAt(window_, row, static_cast<int>(clip_start),
-        (selected ? A_REVERSE : 0) | COLOR_PAIR(CP_DEFAULT_CYAN),
+      attr_t match_attr = COLOR_PAIR(CP_DEFAULT_CYAN);
+      if (selected || (is_search_cursor && blink_phase_)) { match_attr |= A_REVERSE; }
+      printStyledAt(window_, row, static_cast<int>(clip_start), match_attr,
         "%.*s", static_cast<int>(clip_end - clip_start),
         text.c_str() + clip_start);
     }
@@ -461,10 +487,14 @@ void LogPanel::printEntry(size_t row, const LogEntry& entry, size_t line, size_t
     if (off_right) {
       int col = (right_edge_ > 0) ? right_edge_ - 1
                                    : width_ - 1 - (scrollbar() ? 1 : 0);
-      printStyledAt(window_, row, col, COLOR_PAIR(CP_WHITE_CYAN), ">");
+      attr_t ca = is_search_cursor && blink_phase_
+                  ? (COLOR_PAIR(CP_WHITE_CYAN) | A_REVERSE) : COLOR_PAIR(CP_WHITE_CYAN);
+      printStyledAt(window_, row, col, ca, ">");
     }
     if (off_left) {
-      printStyledAt(window_, row, 0, COLOR_PAIR(CP_WHITE_CYAN), "<");
+      attr_t ca = is_search_cursor && blink_phase_
+                  ? (COLOR_PAIR(CP_WHITE_CYAN) | A_REVERSE) : COLOR_PAIR(CP_WHITE_CYAN);
+      printStyledAt(window_, row, 0, ca, "<");
     }
   }
 }

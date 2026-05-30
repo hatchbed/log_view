@@ -43,10 +43,10 @@ void SearchPanel::refresh() {
     std::string search = filter_.getSearch();
     printStyledAt(window_, 0, 0, kAttrGreyBg | (focus_ ? A_BOLD : 0), "%s", label.c_str());
     wattron(window_, kAttrGreyBg);
-    mvwprintw(window_, 0, static_cast<int>(label.length()), "%s", search.c_str());
+    renderPatternInput(window_, 0, static_cast<int>(label.length()), search, kAttrGreyBg);
 
     if (focus_) {
-      std::string help = "  Enter: next  Backspace: prev  CTRL-x: clear";
+      std::string help = "  n: next  N: prev  Enter: page+  Backspace: page-  CTRL-x: clear";
       size_t text_len = label.length() + search.length();
       if (help.length() + text_len <= static_cast<size_t>(width_)) {
         mvwprintw(window_, 0, width_ - static_cast<int>(help.length()), "%s", help.c_str());
@@ -62,7 +62,7 @@ void SearchPanel::refresh() {
 
     printStyledAt(window_, 0, 0, kAttrGreyBg | A_BOLD, "search: ");
     wattron(window_, kAttrGreyBg);
-    mvwprintw(window_, 0, inputOffset(), "%s", input_text_.c_str());
+    renderPatternInput(window_, 0, inputOffset(), input_text_, kAttrGreyBg);
 
     if (focus_) {
       std::string help = "  Enter: search  CTRL-s: cancel  CTRL-x: clear";
@@ -75,7 +75,7 @@ void SearchPanel::refresh() {
     wattroff(window_, kAttrGreyBg);
   } else {
     printStyledAt(window_, 0, 0, focus() ? A_BOLD : 0, "search: ");
-    mvwprintw(window_, 0, inputOffset(), "%s", input_text_.c_str());
+    renderPatternInput(window_, 0, inputOffset(), input_text_);
   }
 }
 
@@ -113,6 +113,12 @@ bool SearchPanel::handleInput(int val) {
       return true;
     } else if (val == KEY_BACKSPACE) {
       filter_.prevMatch();
+      return true;
+    } else if (val == 'n') {
+      filter_.nextMatchByMatch();
+      return true;
+    } else if (val == 'N') {
+      filter_.prevMatchByMatch();
       return true;
     }
     return false;

@@ -39,6 +39,7 @@
 
 #include <log_view/datatypes.h>
 #include <log_view/log_store.h>
+#include <log_view/utils.h>
 
 namespace log_view {
 
@@ -99,8 +100,18 @@ public:
   void search(const std::string& pattern);
   void nextMatch();
   void prevMatch();
+  void nextMatchByMatch();
+  void prevMatchByMatch();
   void clearSearch();
-  std::string getSearch() const { return search_; }
+  std::string getSearch() const { return search_pattern_.raw; }
+  const Pattern& getSearchPattern() const { return search_pattern_; }
+  int64_t getSearchCursor() const { return search_cursor_; }
+
+  struct SearchStats {
+    size_t position = 0;  // 1-based index of current match; 0 = none selected yet
+    size_t total    = 0;
+  };
+  SearchStats getSearchStats() const;
 
   const std::deque<LogLine>& indices() const { return log_indices_; }
   const std::map<std::string, NodeData>& nodes() const { return nodes_; }
@@ -112,10 +123,14 @@ private:
   bool accepted(const LogEntry& entry, bool new_entry = false);
   void cleanSessionBoundaries();
   void removeAtIndex(size_t pos);
+  // Scan for the next/prev match from from_idx. minimal_scroll=true updates cursor_ just
+  // enough to bring the match into view; false uses page-mode placement.
+  bool scanMatchForward(int64_t from_idx, bool minimal_scroll);
+  bool scanMatchBackward(int64_t from_idx, bool minimal_scroll);
   void updatePatternList(
       const std::string& raw,
       std::string& stored_string,
-      std::vector<std::string>& stored_list);
+      std::vector<Pattern>& stored_patterns);
 
   LogStorePtr logs_;
   LogEntry dummy_entry_;
@@ -131,11 +146,12 @@ private:
   int64_t cursor_offset_ = 0;
 
   enum class SearchDirection { SEARCH_BOTH, SEARCH_FWD, SEARCH_REV };
-  std::string search_;
+  Pattern search_pattern_;
   SearchDirection search_direction_ = SearchDirection::SEARCH_BOTH;
-  int64_t search_cursor_ = -1;
-  int64_t search_cursor_fwd_ = -1;
-  int64_t search_cursor_rev_ = -1;
+  int64_t search_cursor_       = -1;
+  int64_t search_cursor_fwd_   = -1;
+  int64_t search_cursor_rev_   = -1;
+  int64_t search_cursor_saved_ = -1;  // last valid cursor, restored if scan exhausts
 
   bool debug_level_ = true;
   bool info_level_ = true;
@@ -150,8 +166,13 @@ private:
 
   size_t selected_node_count_ = 0;
 
-  std::vector<std::string> filter_list_;
-  std::vector<std::string> exclude_list_;
+  std::vector<Pattern> filter_patterns_;
+  std::vector<Pattern> exclude_patterns_;
+
+  mutable size_t  stats_indices_size_ = 0;
+  mutable int64_t stats_cursor_       = -2;
+  mutable size_t  stats_position_     = 0;
+  mutable size_t  stats_total_        = 0;
 
   std::map<std::string, NodeData> nodes_;
 

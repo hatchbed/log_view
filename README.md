@@ -25,7 +25,8 @@ Log messages can be filtered based on:
  - exclude text filter
  - bag source (when loading from bag files)
 
-log_viewer also supports text searches and jumping from match to match.
+log_viewer also supports text searches with three pattern modes (literal, regex, and template)
+and jumping from match to match.
 
 Log messages are copied to the clipboard by selecting them.
 
@@ -82,6 +83,27 @@ Log persistence is configured in the preferences panel (`CTRL-k`):
 
 Clearing the message history (`CTRL-r`) also deletes all persisted log files.
 
+##### Pattern Syntax
+
+Filter, exclude, and search inputs all support the same three matching modes:
+
+| Mode | Syntax | Description |
+|---|---|---|
+| Literal | `text` | Case-insensitive substring match (default) |
+| Regex | `/pattern/` or `/pattern/i` | ECMAScript regular expression; add `i` flag for case-insensitive |
+| Template | `prefix {placeholder} suffix` | Fixed text with typed gaps |
+
+Template placeholders:
+
+| Placeholder | Description |
+|---|---|
+| `{*}` or `{}` | Wildcard — any non-whitespace token |
+| `{>N}` `{<N}` `{>=N}` `{<=N}` `{=N}` | Numeric comparison |
+| `{N..M}` | Numeric range [N, M] |
+| `{a\|b\|c}` | Case-insensitive token alternation |
+
+Multiple patterns can be chained with `;` (logical OR).
+
 ##### Keybindings
 ```
 CTRL-c       Exit log viewer
@@ -114,6 +136,11 @@ CTRL-k       Show/hide preferences
 CTRL-n       Show/hide node selection
 CTRL-r       Clear message history
 CTRL-s       Search for matching string
+
+n            Jump to next search match (single-step)
+N            Jump to previous search match (single-step)
+Enter        Jump to next search match (page scroll)
+Backspace    Jump to previous search match (page scroll)
 ```
 
 ##### Preferences
@@ -134,6 +161,3 @@ There is limited mouse support for selecting log messages and enabling/disabling
 a bug in the currently distributed version of ncurses, mousewheel scrolling only works in the up direction.
 
 ![](https://raw.githubusercontent.com/wiki/hatchbed/log_view/log_viewer2.gif)
-
-### Possible Improvements
- - Regular expression support
