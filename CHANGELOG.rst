@@ -2,6 +2,22 @@
 Changelog for package log_view
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+------------------
+* Add structured pattern matching for filter, exclude, and search inputs supporting three modes:
+
+  * **Literal** (default): case-insensitive substring match.
+  * **Regex**: ``/pattern/`` or ``/pattern/i`` (case-insensitive flag).
+  * **Template**: fixed text with ``{placeholder}`` gaps for numeric comparisons
+    (``{>N}``, ``{<N}``, ``{>=N}``, ``{<=N}``, ``{=N}``, ``{N..M}``), token alternation
+    (``{a|b|c}``), and wildcards (``{*}`` or ``{}``).
+
+* Add single-step match navigation with ``n`` (next match) and ``N`` (previous match).
+* Add match counter to the status bar as ``match: N of M``.
+* Add blinking highlight on the current search match row; off-screen indicators (``<``/``>``)
+  also blink for the current match.
+* Fix focus initialization when restoring filter and exclude patterns from preferences.
+
 0.5.0 (2026-05-28)
 ------------------
 * Add loading logs from one or more bag files.

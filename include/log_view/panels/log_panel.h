@@ -74,6 +74,9 @@ class LogPanel : public PanelInterface {
   bool filled_ = false;
   mutable int64_t first_stamp_ns_ = -1;
   int right_edge_ = 0;  // start col of side panel overlay, 0 = none
+  bool    blink_phase_          = false;
+  int64_t blink_phase_start_ms_ = 0;
+  int64_t last_search_cursor_   = -1;
 };
 using LogPanelPtr = std::shared_ptr<LogPanel>;
 

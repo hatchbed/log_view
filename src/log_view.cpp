@@ -93,8 +93,11 @@ void LogView::init() {
   init_pair(CP_ANSI_MAGENTA, COLOR_MAGENTA, -1);
   init_pair(CP_ANSI_CYAN,    COLOR_CYAN,    -1);
   init_pair(CP_ANSI_WHITE,   COLOR_WHITE,   -1);
-  init_pair(CP_BRIGHT_BLUE,  (COLORS >= 16) ? 12 : COLOR_BLUE, -1);
-  init_pair(CP_WHITE_CYAN,   COLOR_WHITE, COLOR_CYAN);
+  init_pair(CP_BRIGHT_BLUE,           (COLORS >= 16) ? 12 : COLOR_BLUE,    -1);
+  init_pair(CP_BRIGHT_MAGENTA,        (COLORS >= 16) ? 13 : COLOR_MAGENTA, -1);
+  init_pair(CP_CYAN_GREY,           (COLORS >= 16) ? COLOR_CYAN : COLOR_CYAN, (COLORS >= 16) ? 8 : -1);
+  init_pair(CP_BRIGHT_MAGENTA_GREY, (COLORS >= 16) ? 13 : COLOR_MAGENTA,    (COLORS >= 16) ? 8 : -1);
+  init_pair(CP_WHITE_CYAN,            COLOR_WHITE, COLOR_CYAN);
   kAttrGrey     = (COLORS >= 16) ? COLOR_PAIR(CP_GREY)         : static_cast<attr_t>(A_DIM);
   kAttrGreyBg   = (COLORS >= 16) ? COLOR_PAIR(CP_DEFAULT_GREY) : static_cast<attr_t>(A_REVERSE);
   kAttrBoldBlue = A_BOLD | COLOR_PAIR(CP_ANSI_BLUE);
@@ -222,12 +225,15 @@ void LogView::init() {
     if (!prefs_.filters.filter_pattern.empty()) {
       filter_panel_->setInputText(prefs_.filters.filter_pattern);
       filter_panel_->hide(false);
-      filter_panel_->setFocus(false);
     }
     if (!prefs_.filters.exclude_pattern.empty()) {
       exclude_panel_->setInputText(prefs_.filters.exclude_pattern);
       exclude_panel_->hide(false);
-      exclude_panel_->setFocus(false);
+    }
+    if (filter_panel_->visible()) {
+      unfocusOthers(filter_panel_);
+    } else if (exclude_panel_->visible()) {
+      unfocusOthers(exclude_panel_);
     }
   }
 
@@ -469,6 +475,9 @@ void LogView::update() {
     details_panel_->refresh();
   }
 
+  if (search_panel_->visible()) {
+    search_panel_->refresh();
+  }
   level_panel_->refresh();
   status_panel_->refresh();
 

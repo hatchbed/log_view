@@ -37,6 +37,12 @@ void StatusPanel::refresh() {
   size_t total = logs_->logCount();
   size_t filtered = filter_.filteredCount();
 
+  std::string match_suffix;
+  if (!filter_.getSearch().empty()) {
+    auto stats = filter_.getSearchStats();
+    match_suffix = "  match: " + std::to_string(stats.position) + " of " + std::to_string(stats.total);
+  }
+
   if (!bag_files_.empty()) {
     std::string label = (bag_files_.size() == 1) ? "from bag: " : "from bags: ";
     for (size_t i = 0; i < bag_files_.size(); i++) {
@@ -49,16 +55,20 @@ void StatusPanel::refresh() {
     } else {
       left = "logs: " + std::to_string(total) + " " + label;
     }
+    left += match_suffix;
     if (static_cast<int>(left.size()) > width_) {
       left = left.substr(0, static_cast<size_t>(width_ - 3)) + "...";
     }
     mvwprintw(window_, 0, 0, "%s", left.c_str());
   } else {
+    std::string left;
     if (filtered < total) {
-      mvwprintw(window_, 0, 0, "logs: %zu of %zu", filtered, total);
+      left = "logs: " + std::to_string(filtered) + " of " + std::to_string(total);
     } else {
-      mvwprintw(window_, 0, 0, "logs: %zu", total);
+      left = "logs: " + std::to_string(total);
     }
+    left += match_suffix;
+    mvwprintw(window_, 0, 0, "%s", left.c_str());
 
     std::string system_time = toString(system_time_.seconds(), 2);
     std::string time_str;
