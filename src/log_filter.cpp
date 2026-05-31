@@ -653,9 +653,9 @@ LogFilter::SearchStats LogFilter::getSearchStats() const {
     return {stats_position_, stats_total_};
   }
   stats_indices_size_ = log_indices_.size();
+  stats_position_ = 0;
   if (cursor_valid) {
     stats_cursor_ = search_cursor_;
-    stats_position_ = 0;
   }
   stats_total_ = 0;
   const auto& logs = logs_->logs();

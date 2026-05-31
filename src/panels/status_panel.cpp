@@ -40,7 +40,12 @@ void StatusPanel::refresh() {
   std::string match_suffix;
   if (!filter_.getSearch().empty()) {
     auto stats = filter_.getSearchStats();
-    match_suffix = "  match: " + std::to_string(stats.position) + " of " + std::to_string(stats.total);
+    if (stats.total == 0) {
+      match_suffix = "  match: none";
+    } else {
+      match_suffix = "  match: " + std::to_string(stats.position) + " of " +
+                     std::to_string(stats.total);
+    }
   }
 
   if (!bag_files_.empty()) {
