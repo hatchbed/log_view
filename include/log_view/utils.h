@@ -32,6 +32,7 @@
 #include <cctype>
 #include <regex>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <curses.h>

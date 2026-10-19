@@ -315,7 +315,8 @@ void printStyledAt(WINDOW* win, int y, int x, attr_t attr, const char* fmt, ...)
 
 int renderPatternInput(WINDOW* win, int row, int col, const std::string& text, attr_t base_attr) {
   attr_t tmpl_attr  = base_attr ? COLOR_PAIR(CP_CYAN_GREY)           : COLOR_PAIR(CP_ANSI_CYAN);
-  attr_t regex_attr = base_attr ? COLOR_PAIR(CP_BRIGHT_MAGENTA_GREY) : COLOR_PAIR(CP_BRIGHT_MAGENTA);
+  attr_t regex_attr = base_attr ? COLOR_PAIR(CP_BRIGHT_MAGENTA_GREY) :
+                                  COLOR_PAIR(CP_BRIGHT_MAGENTA);
 
   size_t pos = 0;
   while (pos <= text.size()) {
